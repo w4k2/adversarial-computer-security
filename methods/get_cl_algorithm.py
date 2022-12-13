@@ -9,7 +9,7 @@ from avalanche.training.plugins import EvaluationPlugin
 from avalanche.models import MultiHeadClassifier, MultiTaskModule
 
 
-# from utils.mlflow_logger import MLFlowLogger
+from utils.mlflow_logger import MLFlowLogger
 from methods.custom_replay import *
 from methods.custom_cumulative import *
 from methods.custom_agem import *
@@ -26,12 +26,11 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
         loggers.append(TextLogger())
 
     mlf_logger = None
-    # if use_mlflow:
-    #     mlf_logger = MLFlowLogger(experiment_name=args.experiment, nested=args.nested_run, run_name=args.run_name)
-    #     mlf_logger.log_parameters(args.__dict__)
-    #     loggers.append(mlf_logger)
+    if use_mlflow:
+        mlf_logger = MLFlowLogger(experiment_name=args.experiment, nested=args.nested_run, run_name=args.run_name)
+        mlf_logger.log_parameters(args.__dict__)
+        loggers.append(mlf_logger)
 
-    input_channels = 3
     evaluation_plugin = EvaluationPlugin(
         accuracy_metrics(minibatch=False, epoch=True, experience=True, stream=True),
         # forgetting_metrics(experience=True, stream=True),
@@ -138,7 +137,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
     #                            train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
     #                            train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
 
-    return strategy, mlf_logger
+    return strategy, model, mlf_logger
 
 
 class MultiHeadReducedResNet18(MultiTaskModule):
