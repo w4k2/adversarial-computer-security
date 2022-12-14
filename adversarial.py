@@ -1,12 +1,11 @@
 import foolbox.attacks
-import numpy as np
 import torch
 
 from foolbox import PyTorchModel
 from foolbox.distances import l2
 from sklearn.utils import shuffle
 
-from data import get_adv_loaders, read_data
+from data import BaseDataset, read_data
 
 
 class AdversarialExamplesGenerator:
@@ -27,25 +26,22 @@ class AdversarialExamplesGenerator:
         self.attacks = self.attacks[:n_experiences]
 
     def get_adv_datasets(self, net, t, dataset_name):
-        images, labels, _, _ = read_data(dataset_name)
-        images, labels = shuffle(images, labels)
+        train_images, train_labels, test_images, test_labels = read_data(dataset_name)
 
-        raw_advs, labels = self.prepare_adv_dataset(net, images[:self.num_examples],
-                                                    labels[:self.num_examples], t)
-        trn_loader, tst_loader = get_adv_loaders(raw_advs, labels)
-        return trn_loader, tst_loader
+        train_advs, train_labels = self.generate_adversarial_examples(net, train_images, train_labels, t)
+        test_advs, test_labels = self.generate_adversarial_examples(net, test_images, test_labels, t)
 
-    def prepare_adv_dataset(self, model, images, labels, task):
-        images = torch.stack(images)
-        labels = torch.LongTensor(labels)
-        return self.generate_adversarial_examples(model, images, labels, task)
+        train_dataset = BaseDataset(train_advs, train_labels)
+        test_dataset = BaseDataset(test_advs, test_labels)
+
+        return train_dataset, test_dataset
 
     def generate_adversarial_examples(self, model, images, labels, t):
         attack = self.attacks[t-1]
         return_images = []
         return_labels = []
-        images = images.cuda()
-        labels = labels.cuda()
+        images = torch.stack(images).cuda()
+        labels = torch.LongTensor(labels).cuda()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         examples_per_iter = 1000
         iterations = self.num_examples // examples_per_iter

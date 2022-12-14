@@ -27,7 +27,7 @@ class BaseDataset(torch.utils.data.Dataset):
         return x, y
 
 
-def get_data(dataset_name, seed):
+def get_datasets(dataset_name, seed):
     train_datasets = []
     test_datasets = []
 
@@ -39,9 +39,7 @@ def get_data(dataset_name, seed):
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
 
-    train_stream, test_stream = get_benchmark(train_datasets, test_datasets, seed)
-
-    return train_stream, test_stream, num_classes
+    return train_datasets, test_datasets, num_classes
 
 
 def read_data(dataset_name):

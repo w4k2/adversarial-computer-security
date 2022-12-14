@@ -17,7 +17,8 @@ def main():
     seed_everything(args.seed)
 
     device = torch.device(args.device)
-    train_stream, test_stream, classes_per_task = data.get_data(args.dataset, args.seed)
+    train_datasets, test_datasets, classes_per_task = data.get_datasets(args.dataset, args.seed)
+    train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
@@ -27,12 +28,11 @@ def main():
     results = []
     for i in range(args.n_experiences):
         if i > 0:
-            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(
-                model, i, args.dataset)
-
-            train_dataset_list = [base_dataset(train_stream[j]) for j in range(len(train_stream))] + [train_dataset]
-            test_dataset_list = [base_dataset(test_stream[j]) for j in range(len(test_stream))] + [test_dataset]
-            train_stream, test_stream = data.load_data.get_benchmark(train_dataset_list, test_dataset_list, args.seed)
+            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i, args.dataset)
+            train_datasets.append(train_dataset)
+            test_datasets.append(test_dataset)
+            train_stream, test_stream = data.load_data.get_benchmark(train_datasets, test_datasets, args.seed)
+            # TODO check how the labels look like after generation
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
@@ -80,13 +80,6 @@ def seed_everything(seed: int):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-
-
-def base_dataset(expirience):
-    dataset = expirience.dataset._dataset
-    if type(dataset) == torch.utils.data.dataset.Subset:
-        dataset = dataset.dataset
-    return dataset
 
 
 if __name__ == '__main__':
