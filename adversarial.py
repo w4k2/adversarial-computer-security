@@ -6,7 +6,7 @@ from foolbox.distances import l2
 from PIL import Image
 from sklearn.utils import shuffle
 
-from data import get_adv_loaders, get_transform, read_train_data
+from data import get_adv_loaders, read_data
 
 
 number_of_adversarial_examples_pr_attack = 2000
@@ -55,11 +55,9 @@ class AdversarialExamplesGenerator:
         return self.generate_adversarial_examples(model, images, labels, task)
 
     def get_loaders_with_adv_examples(self, net, t, dataset_name):
-        trn_transform, tst_transform = get_transform(dataset_name)
-        images, labels = read_train_data(dataset_name, trn_transform=trn_transform,
-                                         tst_transform=tst_transform)
-
+        images, labels, _, _ = read_data(dataset_name)
         images, labels = shuffle(images, labels)
+
         raw_advs, labels = self.prepare_adv_dataset(net.base_model, images[:number_of_adversarial_examples_pr_attack],
                                                     labels[:number_of_adversarial_examples_pr_attack], t)
         trn_loader, tst_loader = get_adv_loaders(raw_advs, labels)
