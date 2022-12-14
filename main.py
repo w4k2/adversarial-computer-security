@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 import torch
+import torch.utils.data.dataset
 
 import adversarial
 import data
@@ -16,19 +17,21 @@ def main():
     seed_everything(args.seed)
 
     device = torch.device(args.device)
-    train_stream, test_stream, classes_per_task = data.get_data(args.dataset, args.n_experiences, args.seed)
+    train_stream, test_stream, classes_per_task = data.get_data(args.dataset, args.seed)
 
-    strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, classes_per_task, use_mlflow=not args.debug)
+    num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
+    strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
 
-    adversarial_examples = adversarial.AdversarialExamplesGenerator(num_classes=classes_per_task)
+    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences)
 
     results = []
     for i in range(args.n_experiences):
         if i > 0:
-            train_dataset, test_dataset = adversarial_examples.get_loaders_with_adv_examples(
+            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(
                 model, i, args.dataset)
-            train_dataset_list = [train_stream[j].dataset._dataset for j in range(len(train_stream))] + [train_dataset]
-            test_dataset_list = [test_stream[j].dataset._dataset for j in range(len(test_stream))] + [test_dataset]
+
+            train_dataset_list = [base_dataset(train_stream[j]) for j in range(len(train_stream))] + [train_dataset]
+            test_dataset_list = [base_dataset(test_stream[j]) for j in range(len(test_stream))] + [test_dataset]
             train_stream, test_stream = data.load_data.get_benchmark(train_dataset_list, test_dataset_list, args.seed)
 
         train_task = train_stream[i]
@@ -53,7 +56,7 @@ def parse_args():
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
     parser.add_argument('--n_experiences', default=6, type=int)
-    parser.add_argument('--training_mode', default='task_incremental', choices=('task_incremental', 'domain_incremental', 'class_incremental'))
+    parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
 
     parser.add_argument('--lr', default=0.0001, type=float)
     parser.add_argument('--momentum', default=0.8, type=float)
@@ -77,6 +80,13 @@ def seed_everything(seed: int):
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+
+def base_dataset(expirience):
+    dataset = expirience.dataset._dataset
+    if type(dataset) == torch.utils.data.dataset.Subset:
+        dataset = dataset.dataset
+    return dataset
 
 
 if __name__ == '__main__':

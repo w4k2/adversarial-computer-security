@@ -27,7 +27,7 @@ class BaseDataset(torch.utils.data.Dataset):
         return x, y
 
 
-def get_data(dataset_name, n_experiences, seed):
+def get_data(dataset_name, seed):
     train_datasets = []
     test_datasets = []
 
@@ -93,7 +93,7 @@ def get_benchmark(train_datasets, test_datasets, seed):
         train_dataset=train_datasets,
         test_dataset=test_datasets,
         n_experiences=None,
-        task_labels=True,
+        task_labels=False,
         seed=seed,
         class_ids_from_zero_in_each_exp=True,
         one_dataset_per_exp=True
@@ -106,7 +106,6 @@ def get_benchmark(train_datasets, test_datasets, seed):
 
 def get_adv_loaders(adv_images, adv_labels, train_perc=0.75):
     assert len(adv_images) == len(adv_labels)
-    adv_images = [torch.from_numpy(image).float() for image in adv_images]
 
     split = int(train_perc * len(adv_images))
     train_images = adv_images[:split]

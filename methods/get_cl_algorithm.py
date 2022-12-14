@@ -44,7 +44,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
         plugins.append(DebugPlugin())
 
     if args.method == 'cumulative':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = CumulativeModified(model, optimizer, criterion,
@@ -53,7 +53,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                                       evaluator=evaluation_plugin, eval_every=-1
                                       )
     elif args.method == 'naive':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = Naive(model, optimizer, criterion,
@@ -62,7 +62,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                          evaluator=evaluation_plugin, eval_every=-1
                          )
     elif args.method == 'ewc':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=0.0)
         criterion = nn.CrossEntropyLoss()
         # plugins.append(ConvertedLabelsPlugin())
@@ -71,7 +71,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                        ewc_lambda=ewc_lambda, train_mb_size=args.batch_size, eval_mb_size=args.batch_size,
                        device=device, train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin)
     elif args.method == 'si':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=0.0)
         criterion = nn.CrossEntropyLoss()
         # plugins.append(ConvertedLabelsPlugin())
@@ -79,14 +79,14 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                                         si_lambda=1000, train_mb_size=args.batch_size, eval_mb_size=args.batch_size,
                                         device=device, train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin)
     elif args.method == 'gem':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = GEM(model, optimizer, criterion, patterns_per_exp=250,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'agem':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = AGEMModified(model, optimizer, criterion, patterns_per_exp=500, sample_size=256,
@@ -100,21 +100,21 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                                train_mb_size=args.batch_size, eval_mb_size=args.batch_size,
                                train_epochs=args.n_epochs, plugins=plugins, device=device, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'replay':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = ReplayModified(model, optimizer, criterion, mem_size=250*args.n_experiences,
                                   train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                                   train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'lwf':
-        model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = LwF(model, optimizer, criterion, alpha=1.0, temperature=1.0,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     # elif args.method == 'mir':
-    #     model = resnet18_multihead(num_classes=classes_per_task, pretrained=args.pretrained)
+    #     model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
     #     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
     #     criterion = nn.CrossEntropyLoss()
     #     strategy = Mir(model, optimizer, criterion, patterns_per_exp=250, sample_size=50,
@@ -138,27 +138,3 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
     #                            train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
 
     return strategy, model, mlf_logger
-
-
-class MultiHeadReducedResNet18(MultiTaskModule):
-    """
-    As from GEM paper, a smaller version of ResNet18, with three times less feature maps across all layers.
-    It employs multi-head output layer.
-    """
-
-    def __init__(self, base_model, output_size=160):
-        super().__init__()
-        self.base_model = base_model
-        self.classifier = MultiHeadClassifier(output_size, masking=False)
-
-    def forward(self, x, task_labels):
-        out = self.base_model(x)
-        return self.classifier(out, task_labels)
-
-
-def resnet18_multihead(**kwargs):
-    base_model = resnet.resnet18(**kwargs)
-    output_size = base_model.fc.in_features
-    base_model.fc = nn.Identity()
-    model = MultiHeadReducedResNet18(base_model, output_size)
-    return model
