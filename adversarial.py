@@ -2,6 +2,7 @@ import foolbox.attacks as fa
 import numpy as np
 import torch
 from foolbox import PyTorchModel
+from foolbox.distances import l2
 from PIL import Image
 from sklearn.utils import shuffle
 
@@ -18,7 +19,7 @@ class AdversarialExamplesGenerator:
         self.num_classes = num_classes
         self.attacks = [
             fa.FGSM(),
-            fa.InversionAttack(),
+            fa.InversionAttack(distance=l2),
             fa.LinfPGD(),
             fa.LinfBasicIterativeAttack(),
             fa.LinfDeepFoolAttack(),
@@ -59,7 +60,7 @@ class AdversarialExamplesGenerator:
                                                                                tst_transform=tst_transform)
 
         images, labels = shuffle(images, labels)
-        raw_advs, labels = self.prepare_adv_dataset(net.model, images[:number_of_adversarial_examples_pr_attack],
+        raw_advs, labels = self.prepare_adv_dataset(net.base_model, images[:number_of_adversarial_examples_pr_attack],
                                                     labels[:number_of_adversarial_examples_pr_attack], t)
         trn_loader, val_loader, tst_loader = get_adv_loaders(raw_advs, labels, t)
         return trn_loader, val_loader, tst_loader

@@ -148,11 +148,11 @@ class MultiHeadReducedResNet18(MultiTaskModule):
 
     def __init__(self, base_model, output_size=160):
         super().__init__()
-        self.resnet = base_model
+        self.base_model = base_model
         self.classifier = MultiHeadClassifier(output_size, masking=False)
 
     def forward(self, x, task_labels):
-        out = self.resnet(x)
+        out = self.base_model(x)
         return self.classifier(out, task_labels)
 
 

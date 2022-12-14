@@ -1,8 +1,10 @@
-from avalanche.benchmarks.generators import dataset_benchmark
 import numpy as np
 import PIL
 import torch.utils.data
 import torchvision.transforms as transforms
+
+from avalanche.benchmarks import nc_benchmark
+
 
 DATABASE = "malware"
 number_of_adversarial_examples_pr_attack = 2000
@@ -55,27 +57,25 @@ def get_data(dataset_name, n_experiences, seed):
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
 
-    benchmark = dataset_benchmark(train_datasets, test_datasets)
-    new_train_stream = []
-    for i, exp in enumerate(benchmark.train_stream):
-        new_dataset = exp.dataset
-        new_dataset.targets_task_labels = [i for _ in range(len(new_dataset.targets_task_labels))]
-        exp.dataset = new_dataset
-        new_train_stream.append(exp)
-    benchmark.train_stream = new_train_stream
+    train_stream, test_stream = get_benchmark(train_datasets, test_datasets, seed)
 
-    new_test_stream = []
-    for i, exp in enumerate(benchmark.test_stream):
-        new_dataset = exp.dataset
-        new_dataset.targets_task_labels = [i for _ in range(len(new_dataset.targets_task_labels))]
-        exp.dataset = new_dataset
-        new_test_stream.append(exp)
-    benchmark.test_stream = new_test_stream
+    return train_stream, test_stream, num_classes
 
+
+def get_benchmark(train_datasets, test_datasets, seed):
+    benchmark = nc_benchmark(
+        train_dataset=train_datasets,
+        test_dataset=test_datasets,
+        n_experiences=None,
+        task_labels=True,
+        seed=seed,
+        class_ids_from_zero_in_each_exp=True,
+        one_dataset_per_exp=True
+    )
     train_stream = benchmark.train_stream
     test_stream = benchmark.test_stream
 
-    return train_stream, test_stream, num_classes
+    return train_stream, test_stream
 
 
 def get_loaders():

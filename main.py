@@ -17,17 +17,21 @@ def main():
 
     device = torch.device(args.device)
     train_stream, test_stream, classes_per_task = data.get_data(args.dataset, args.n_experiences, args.seed)
+
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, classes_per_task, use_mlflow=not args.debug)
 
     adversarial_examples = adversarial.AdversarialExamplesGenerator(num_classes=classes_per_task)
 
     results = []
-    for i, train_task in enumerate(train_stream):
+    for i in range(args.n_experiences):
         if i > 0:
             train_dataset, val_dataset, test_dataset = adversarial_examples.get_loaders_with_adv_examples(
                 model, i)
-            train_stream.append(train_dataset)  # TODO it should be avalanche.benchmarks.scenarios.classification_scenario.GenericClassificationExperience not dataset
+            train_dataset_list = [train_stream[j].dataset._dataset for j in range(len(train_stream))] + [train_dataset]
+            test_dataset_list = [test_stream[j].dataset._dataset for j in range(len(test_stream))] + [test_dataset]
+            train_stream, test_stream = data.load_data.get_benchmark(train_dataset_list, test_dataset_list, args.seed)
 
+        train_task = train_stream[i]
         eval_stream = [test_stream[i]]
         strategy.train(train_task, eval_stream, num_workers=20)
         selected_tasks = [test_stream[j] for j in range(0, i+1)]
@@ -48,7 +52,7 @@ def parse_args():
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
-    parser.add_argument('--n_experiences', default=50, type=int)
+    parser.add_argument('--n_experiences', default=6, type=int)
     parser.add_argument('--training_mode', default='task_incremental', choices=('task_incremental', 'domain_incremental', 'class_incremental'))
 
     parser.add_argument('--lr', default=0.0001, type=float)
