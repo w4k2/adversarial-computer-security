@@ -26,7 +26,7 @@ def main():
     for i in range(args.n_experiences):
         if i > 0:
             train_dataset, val_dataset, test_dataset = adversarial_examples.get_loaders_with_adv_examples(
-                model, i)
+                model, i, args.dataset)
             train_dataset_list = [train_stream[j].dataset._dataset for j in range(len(train_stream))] + [train_dataset]
             test_dataset_list = [test_stream[j].dataset._dataset for j in range(len(test_stream))] + [test_dataset]
             train_stream, test_stream = data.load_data.get_benchmark(train_dataset_list, test_dataset_list, args.seed)

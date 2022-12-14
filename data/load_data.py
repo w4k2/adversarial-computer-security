@@ -1,3 +1,4 @@
+import pathlib
 import numpy as np
 import PIL
 import torch.utils.data
@@ -6,26 +7,7 @@ import torchvision.transforms as transforms
 from avalanche.benchmarks import nc_benchmark
 
 
-DATABASE = "malware"
-number_of_adversarial_examples_pr_attack = 2000
-base_settings = {
-    "malware": {
-        'x_train': 'USTC-TFC2016/X_train_ustc.npy',
-        'x_test': 'USTC-TFC2016/X_test_ustc.npy',
-        'y_train': 'USTC-TFC2016/y_train_ustc.npy',
-        'y_test': 'USTC-TFC2016/y_test_ustc.npy',
-        'taskcla': [(0, 10), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1)]
-    },
-    "cicids": {
-        'x_train': 'CIC-IDS-2017/X_train_cicids.npy',
-        'x_test': 'CIC-IDS-2017/X_test_cicids.npy',
-        'y_train': 'CIC-IDS-2017/y_train_cicids.npy',
-        'y_test': 'CIC-IDS-2017/y_test_cicids.npy',
-        'taskcla': [(0, 9), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1), (10, 1)]
-    }
-}
 VALIDATION_SIZE = 2000
-config = base_settings[DATABASE]
 
 
 class BaseDataset(torch.utils.data.Dataset):
@@ -53,7 +35,7 @@ def get_data(dataset_name, n_experiences, seed):
     train_datasets = []
     test_datasets = []
 
-    train_dataset, _, test_dataset, num_classes = get_loaders()
+    train_dataset, _, test_dataset, num_classes = get_loaders(dataset_name)
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
 
@@ -78,11 +60,11 @@ def get_benchmark(train_datasets, test_datasets, seed):
     return train_stream, test_stream
 
 
-def get_loaders():
+def get_loaders(dataset_name):
     """Apply transformations to Datasets and create the DataLoaders for each task"""
-    trn_transform, tst_transform = get_transform()
+    trn_transform, tst_transform = get_transform(dataset_name)
     train_images, train_labels, validation_images, validation_labels, test_images, test_labels = read_datasets(
-        trn_transform=trn_transform, tst_transform=tst_transform)
+        dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
 
     collected_data = {}
     collected_data['name'] = 'task-0'
@@ -106,8 +88,8 @@ def get_loaders():
     return trn_dset, val_dset, tst_dset, num_classes
 
 
-def get_transform():
-    if DATABASE == 'cicids':
+def get_transform(dataset_name):
+    if dataset_name == 'cicids':
         dc = {
             'extend_channel': None,
             'pad': None,
@@ -169,11 +151,12 @@ def get_transforms(resize, pad, crop, flip, normalize, extend_channel):
     return transforms.Compose(trn_transform_list), transforms.Compose(tst_transform_list)
 
 
-def read_datasets(train_dir='./data', trn_transform=None, tst_transform=None):
-    train_images = np.load(train_dir + f"/{config['x_train']}")
-    train_labels = np.load(train_dir + f"/{config['y_train']}")
-    test_images = np.load(train_dir + f"/{config['x_test']}")
-    test_labels = np.load(train_dir + f"/{config['y_test']}")
+def read_datasets(dataset_name, trn_transform=None, tst_transform=None):
+    dataset_path = pathlib.Path('data') / dataset_name
+    train_images = np.load(dataset_path / 'X_train.npy')
+    train_labels = np.load(dataset_path / 'y_train.npy')
+    test_images = np.load(dataset_path / 'X_test.npy')
+    test_labels = np.load(dataset_path / 'y_test.npy')
     test_images = test_images.astype(np.float32)
     train_images = train_images.astype(np.float32)
     validation_images = train_images[:VALIDATION_SIZE]
@@ -182,7 +165,7 @@ def read_datasets(train_dir='./data', trn_transform=None, tst_transform=None):
     train_labels = train_labels[VALIDATION_SIZE:]
 
     if trn_transform and tst_transform:
-        if DATABASE == 'cicids':
+        if dataset_name == 'cicids':
             train_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in train_images]
             test_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in test_images]
             validation_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in validation_images]
@@ -216,8 +199,8 @@ def get_adv_loaders(adv_images, adv_labels, task, train_perc=0.75, val_perc=0.15
     return trn_dset, val_dset, tst_dset
 
 
-def read_train_data(tst_transform=None, trn_transform=None):
+def read_train_data(dataset_name, tst_transform=None, trn_transform=None):
     from sklearn.utils import shuffle
-    train_images, train_labels, validation_images, validation_labels, test_images, test_labels = read_datasets(trn_transform=trn_transform, tst_transform=tst_transform)
+    train_images, train_labels, validation_images, validation_labels, test_images, test_labels = read_datasets(dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
     train_images, train_labels = shuffle(train_images, train_labels)
     return train_images, train_labels, validation_images, validation_labels

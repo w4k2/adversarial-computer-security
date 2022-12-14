@@ -54,9 +54,9 @@ class AdversarialExamplesGenerator:
         images = torch.stack(images)
         return self.generate_adversarial_examples(model, images, labels, task)
 
-    def get_loaders_with_adv_examples(self, net, t):
-        trn_transform, tst_transform = get_transform()
-        images, labels, validation_images, validation_labels = read_train_data(trn_transform=trn_transform,
+    def get_loaders_with_adv_examples(self, net, t, dataset_name):
+        trn_transform, tst_transform = get_transform(dataset_name)
+        images, labels, validation_images, validation_labels = read_train_data(dataset_name, trn_transform=trn_transform,
                                                                                tst_transform=tst_transform)
 
         images, labels = shuffle(images, labels)
