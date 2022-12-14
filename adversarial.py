@@ -40,6 +40,7 @@ class AdversarialExamplesGenerator:
         attack = self.attacks[t-1]
         return_images = []
         return_labels = []
+        images, labels = shuffle(images, labels)
         images = torch.stack(images).cuda()
         labels = torch.LongTensor(labels).cuda()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
