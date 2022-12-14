@@ -7,17 +7,13 @@ import torchvision.transforms as transforms
 from avalanche.benchmarks import nc_benchmark
 
 
-VALIDATION_SIZE = 2000
-
-
 class BaseDataset(torch.utils.data.Dataset):
     """Characterizes a dataset for PyTorch -- this dataset pre-loads all paths in memory"""
 
-    def __init__(self, dataset, class_indices=None):
+    def __init__(self, images, targets):
         """Initialization"""
-        self.images = dataset['x']
-        self.targets = dataset['y']
-        self.class_indices = class_indices
+        self.images = images
+        self.targets = targets
 
     def __len__(self):
         """Denotes the total number of samples"""
@@ -35,7 +31,7 @@ def get_data(dataset_name, n_experiences, seed):
     train_datasets = []
     test_datasets = []
 
-    train_dataset, _, test_dataset, num_classes = get_loaders(dataset_name)
+    train_dataset, test_dataset, num_classes = get_datasets(dataset_name)
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
 
@@ -60,32 +56,15 @@ def get_benchmark(train_datasets, test_datasets, seed):
     return train_stream, test_stream
 
 
-def get_loaders(dataset_name):
-    """Apply transformations to Datasets and create the DataLoaders for each task"""
+def get_datasets(dataset_name):
     trn_transform, tst_transform = get_transform(dataset_name)
-    train_images, train_labels, validation_images, validation_labels, test_images, test_labels = read_datasets(
-        dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
+    train_images, train_labels, test_images, test_labels = read_datasets(dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
 
-    collected_data = {}
-    collected_data['name'] = 'task-0'
-    collected_data['trn'] = {'x': [], 'y': []}
-    collected_data['val'] = {'x': [], 'y': []}
-    collected_data['tst'] = {'x': [], 'y': []}
-    collected_data['trn']['x'] = train_images
-    collected_data['trn']['y'] = train_labels
-    collected_data['val']['x'] = validation_images
-    collected_data['val']['y'] = validation_labels
-    collected_data['tst']['x'] = test_images
-    collected_data['tst']['y'] = test_labels
+    train_dataset = BaseDataset(train_images, train_labels)
+    test_dataset = BaseDataset(test_images, test_labels)
+    num_classes = len(np.unique(train_labels))
 
-    num_classes = len(np.unique(collected_data['trn']['y']))
-    class_indices = list(range(num_classes))
-
-    trn_dset = BaseDataset(collected_data['trn'], class_indices)
-    val_dset = BaseDataset(collected_data['val'], class_indices)
-    tst_dset = BaseDataset(collected_data['tst'], class_indices)
-
-    return trn_dset, val_dset, tst_dset, num_classes
+    return train_dataset, test_dataset, num_classes
 
 
 def get_transform(dataset_name):
@@ -153,54 +132,37 @@ def get_transforms(resize, pad, crop, flip, normalize, extend_channel):
 
 def read_datasets(dataset_name, trn_transform=None, tst_transform=None):
     dataset_path = pathlib.Path('data') / dataset_name
-    train_images = np.load(dataset_path / 'X_train.npy')
+    train_images = np.load(dataset_path / 'X_train.npy').astype(np.float32)
     train_labels = np.load(dataset_path / 'y_train.npy')
-    test_images = np.load(dataset_path / 'X_test.npy')
+    test_images = np.load(dataset_path / 'X_test.npy').astype(np.float32)
     test_labels = np.load(dataset_path / 'y_test.npy')
-    test_images = test_images.astype(np.float32)
-    train_images = train_images.astype(np.float32)
-    validation_images = train_images[:VALIDATION_SIZE]
-    validation_labels = train_labels[:VALIDATION_SIZE]
-    train_images = train_images[VALIDATION_SIZE:]
-    train_labels = train_labels[VALIDATION_SIZE:]
 
     if trn_transform and tst_transform:
         if dataset_name == 'cicids':
             train_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in train_images]
             test_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in test_images]
-            validation_images = [trn_transform(np.swapaxes(image, 0, 1).astype(np.uint8)) for image in validation_images]
         else:
             train_images = [trn_transform(PIL.Image.fromarray(np.squeeze(np.swapaxes(image, 0, 2)).astype(np.uint8))) for image in train_images]
             test_images = [tst_transform(PIL.Image.fromarray(np.squeeze(np.swapaxes(image, 0, 2)).astype(np.uint8))) for image in test_images]
-            validation_images = [tst_transform(PIL.Image.fromarray(np.squeeze(np.swapaxes(image, 0, 2)).astype(np.uint8))) for image in validation_images]
-    return train_images, train_labels, validation_images, validation_labels, test_images, test_labels
+    return train_images, train_labels, test_images, test_labels
 
 
-def get_adv_loaders(adv_images, adv_labels, task, train_perc=0.75, val_perc=0.15, batch_size=50):
+def get_adv_loaders(adv_images, adv_labels, train_perc=0.75):
     adv_images = [torch.from_numpy(image).float() for image in adv_images]
-    collected_data = {}
-    collected_data['name'] = 'task-' + str(task)
-    collected_data['trn'] = {'x': adv_images[:int(train_perc * len(adv_images))], 'y': adv_labels[:int(train_perc * len(adv_labels))]}
-    collected_data['val'] = {'x': adv_images[int(train_perc * len(adv_images)):int((train_perc + val_perc) * len(adv_images))],
-                             'y': adv_labels[int(train_perc * len(adv_labels)):int((train_perc + val_perc) * len(adv_labels))]}
-    collected_data['tst'] = {'x': adv_images[int((train_perc + val_perc) * len(adv_images)):], 'y': adv_labels[int((train_perc + val_perc) * len(adv_labels)):]}
 
-    collected_data['ncla'] = len(np.unique(collected_data['trn']['y']))
-    class_indices = {label: idx for idx, label in enumerate(np.unique(collected_data['trn']['y']))}
+    train_images = adv_images[:int(train_perc * len(adv_images))]
+    train_labels = adv_labels[:int(train_perc * len(adv_labels))]
+    test_images = adv_images[int(train_perc * len(adv_images)):]
+    test_labels = adv_labels[int(train_perc * len(adv_labels)):]
 
-    Dataset = BaseDataset
-    trn_dset = Dataset(collected_data['trn'], class_indices)
-    val_dset = Dataset(collected_data['val'], class_indices)
-    tst_dset = Dataset(collected_data['tst'], class_indices)
+    trn_dset = BaseDataset(train_images, train_labels)
+    tst_dset = BaseDataset(test_images, test_labels)
 
-    # trn_load = data.DataLoader(dataset=trn_dset, batch_size=batch_size, shuffle=True, pin_memory=True)
-    # val_load = data.DataLoader(dataset=val_dset, batch_size=batch_size, shuffle=False, pin_memory=True)
-    # tst_load = data.DataLoader(dataset=tst_dset, batch_size=batch_size, shuffle=False, pin_memory=True)
-    return trn_dset, val_dset, tst_dset
+    return trn_dset, tst_dset
 
 
 def read_train_data(dataset_name, tst_transform=None, trn_transform=None):
     from sklearn.utils import shuffle
-    train_images, train_labels, validation_images, validation_labels, test_images, test_labels = read_datasets(dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
+    train_images, train_labels, test_images, test_labels = read_datasets(dataset_name, trn_transform=trn_transform, tst_transform=tst_transform)
     train_images, train_labels = shuffle(train_images, train_labels)
-    return train_images, train_labels, validation_images, validation_labels
+    return train_images, train_labels
