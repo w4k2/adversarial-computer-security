@@ -3,15 +3,15 @@ import torch
 import torch.nn.functional as F
 
 from avalanche.models import avalanche_forward
-from avalanche.training.plugins.evaluation import default_logger
-from avalanche.training.strategies.base_strategy import BaseStrategy
+from avalanche.training.templates.supervised import SupervisedTemplate
+from avalanche.training.plugins.strategy_plugin import SupervisedPlugin
+from avalanche.training.plugins.evaluation import default_evaluator
 from torch.utils.data.dataloader import DataLoader
 from .rehersal_buffer import RehersalBuffer
 from avalanche.benchmarks.utils.data_loader import _default_collate_mbatches_fn
-from avalanche.training.plugins import StrategyPlugin
 
 
-class MirPlugin(StrategyPlugin):
+class MirPlugin(SupervisedPlugin):
 
     def __init__(self, patterns_per_exp: int, sample_size: int):
         super().__init__()
@@ -121,7 +121,7 @@ class MirPlugin(StrategyPlugin):
         """
         Update replay memory with patterns from current experience.
         """
-        print('\n\nupdate memory called\n\n')
+        # print('\n\nupdate memory called\n\n')
         if len(dataset) > self.patterns_per_experience:
             indices = torch.randperm(len(dataset))[:self.patterns_per_experience]
             dataset = torch.utils.data.Subset(dataset, indices)
@@ -138,7 +138,7 @@ class MirPlugin(StrategyPlugin):
         self.buffers_dataloders = iter(dataloder)
 
 
-class Mir(BaseStrategy):
+class Mir(SupervisedTemplate):
     """ Average Gradient Episodic Memory (A-GEM) strategy.
 
     See AGEM plugin for details.
@@ -149,7 +149,7 @@ class Mir(BaseStrategy):
                  patterns_per_exp: int, sample_size: int,
                  train_mb_size: int = 1, train_epochs: int = 1,
                  eval_mb_size: int = None, device=None,
-                 plugins=None, evaluator=default_logger, eval_every=-1):
+                 plugins=None, evaluator=default_evaluator, eval_every=-1):
         mir = MirPlugin(patterns_per_exp, sample_size)
         if plugins is None:
             plugins = [mir]

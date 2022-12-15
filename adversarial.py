@@ -54,8 +54,9 @@ class AdversarialExamplesGenerator:
             raw_advs, clipped_advs, success = attack(fmodel, images[indicies], labels[indicies], epsilons=self.epsilons)
 
             for adv in clipped_advs:
-                adv = adv.cpu().numpy()
-                return_images.extend(adv)
+                return_images.append(adv.cpu())
                 return_labels = return_labels + [i for _ in range(len(adv))]
+        return_images = torch.cat(return_images, dim=0)
+        return_labels = torch.LongTensor(return_labels)
         assert len(return_images) == len(return_labels)
         return return_images, return_labels

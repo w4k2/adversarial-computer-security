@@ -1,6 +1,7 @@
 import pathlib
 import numpy as np
 import PIL
+import torch
 import torch.utils.data
 import torchvision.transforms as transforms
 
@@ -23,7 +24,6 @@ class BaseDataset(torch.utils.data.Dataset):
         """Generates one sample of data"""
         x = self.images[index]
         y = self.targets[index]
-        y = torch.tensor(y, dtype=torch.long)
         return x, y
 
 
@@ -46,8 +46,10 @@ def read_data(dataset_name):
     dataset_path = pathlib.Path('data') / dataset_name
     train_images = np.load(dataset_path / 'X_train.npy').astype(np.float32)
     train_labels = np.load(dataset_path / 'y_train.npy')
+    train_labels = torch.LongTensor(train_labels)
     test_images = np.load(dataset_path / 'X_test.npy').astype(np.float32)
     test_labels = np.load(dataset_path / 'y_test.npy')
+    test_labels = torch.LongTensor(test_labels)
 
     train_transforms, test_transform = get_transform(dataset_name)
     train_images = [train_transforms(img) for img in train_images]
@@ -91,7 +93,7 @@ def get_benchmark(train_datasets, test_datasets, seed):
         train_dataset=train_datasets,
         test_dataset=test_datasets,
         n_experiences=None,
-        task_labels=True,
+        task_labels=False,
         seed=seed,
         shuffle=False,
         class_ids_from_zero_in_each_exp=True,
