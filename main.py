@@ -22,8 +22,7 @@ def main():
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
-
-    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences)
+    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task)
 
     results = []
     for i in range(args.n_experiences):
@@ -32,7 +31,6 @@ def main():
             train_datasets.append(train_dataset)
             test_datasets.append(test_dataset)
             train_stream, test_stream = data.load_data.get_benchmark(train_datasets, test_datasets, args.seed)
-            # TODO check how the labels look like after generation
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]

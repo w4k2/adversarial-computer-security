@@ -1,5 +1,6 @@
 import foolbox.attacks
 import torch
+import numpy as np
 
 from foolbox import PyTorchModel
 from foolbox.distances import l2
@@ -9,8 +10,9 @@ from data import BaseDataset, read_data
 
 
 class AdversarialExamplesGenerator:
-    def __init__(self, n_experiences, num_examples=2000, max_examples_per_epsilon=2000):
+    def __init__(self, n_experiences, num_classes, num_examples=2000, max_examples_per_epsilon=2000):
         self.num_examples = num_examples
+        self.num_classes = num_classes
         self.max_examples_per_epsilon = max_examples_per_epsilon
         self.epsilons = [0.03, 0.1, 0.3, 0.5]
         self.attacks = [
@@ -44,19 +46,16 @@ class AdversarialExamplesGenerator:
         images = torch.stack(images).cuda()
         labels = torch.LongTensor(labels).cuda()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
-        examples_per_iter = 1000
-        iterations = self.num_examples // examples_per_iter
-        for i in range(iterations):
-            raw_advs, clipped_advs, success = attack(fmodel,
-                                                     images[i*examples_per_iter:(i+1)*examples_per_iter],
-                                                     labels[i*examples_per_iter:(i+1)*examples_per_iter],
-                                                     epsilons=self.epsilons)
+        for i in range(self.num_classes):
+            indicies = torch.argwhere(labels == i).flatten()
+            raw_advs, clipped_advs, success = attack(fmodel, images[indicies], labels[indicies], epsilons=self.epsilons)
 
             for adv in clipped_advs:
-                # TODO check if adverserial examples are in the same order as original images (check if labels still can be used)
                 adv = adv.cpu().numpy()
-                adv_labels = labels[i*examples_per_iter:(i+1)*examples_per_iter].cpu().numpy()
-                adv, adv_labels = shuffle(adv, adv_labels)
-                return_images.extend(adv[:self.max_examples_per_epsilon])
-                return_labels.extend(adv_labels[:self.max_examples_per_epsilon])
+                np.random.shuffle(adv)
+                max_examples = min(self.max_examples_per_epsilon, len(adv))
+                return_images.extend(adv[:max_examples])
+                adv_labels = [i for _ in range(max_examples)]
+                return_labels.extend(adv_labels)
+        assert len(return_images) == len(return_labels)
         return return_images, return_labels
