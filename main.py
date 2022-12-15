@@ -35,7 +35,7 @@ def main():
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
         strategy.train(train_task, eval_stream, num_workers=20)
-        selected_tasks = [test_stream[j] for j in range(0, i+1)]
+        selected_tasks = [test_stream[j] for j in range(i+1)]
         eval_results = strategy.eval(selected_tasks)
         results.append(eval_results)
 

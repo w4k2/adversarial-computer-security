@@ -44,7 +44,7 @@ class AdversarialExamplesGenerator:
         images, labels = shuffle(images, labels)
         images = torch.stack(images).cuda()
         labels = torch.LongTensor(labels).cuda()
-        # model.eval()
+        model.eval()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         for i in range(self.num_classes):
             indicies = torch.argwhere(labels == i).flatten()

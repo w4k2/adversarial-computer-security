@@ -91,8 +91,9 @@ def get_benchmark(train_datasets, test_datasets, seed):
         train_dataset=train_datasets,
         test_dataset=test_datasets,
         n_experiences=None,
-        task_labels=False,
+        task_labels=True,
         seed=seed,
+        shuffle=False,
         class_ids_from_zero_in_each_exp=True,
         one_dataset_per_exp=True
     )
