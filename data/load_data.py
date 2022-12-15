@@ -100,18 +100,3 @@ def get_benchmark(train_datasets, test_datasets, seed):
     test_stream = benchmark.test_stream
 
     return train_stream, test_stream
-
-
-def get_adv_loaders(adv_images, adv_labels, train_perc=0.75):
-    assert len(adv_images) == len(adv_labels)
-
-    split = int(train_perc * len(adv_images))
-    train_images = adv_images[:split]
-    train_labels = adv_labels[:split]
-    test_images = adv_images[split:]
-    test_labels = adv_labels[split:]
-
-    trn_dset = BaseDataset(train_images, train_labels)
-    tst_dset = BaseDataset(test_images, test_labels)
-
-    return trn_dset, tst_dset

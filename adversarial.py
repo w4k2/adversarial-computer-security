@@ -1,6 +1,5 @@
 import foolbox.attacks
 import torch
-import numpy as np
 
 from foolbox import PyTorchModel
 from foolbox.distances import l2
@@ -45,17 +44,18 @@ class AdversarialExamplesGenerator:
         images, labels = shuffle(images, labels)
         images = torch.stack(images).cuda()
         labels = torch.LongTensor(labels).cuda()
+        # model.eval()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         for i in range(self.num_classes):
             indicies = torch.argwhere(labels == i).flatten()
+            shuffle_idx = torch.randperm(len(indicies))
+            indicies = indicies[shuffle_idx]
+            indicies = indicies[:self.max_examples_per_epsilon]
             raw_advs, clipped_advs, success = attack(fmodel, images[indicies], labels[indicies], epsilons=self.epsilons)
 
             for adv in clipped_advs:
                 adv = adv.cpu().numpy()
-                np.random.shuffle(adv)
-                max_examples = min(self.max_examples_per_epsilon, len(adv))
-                return_images.extend(adv[:max_examples])
-                adv_labels = [i for _ in range(max_examples)]
-                return_labels.extend(adv_labels)
+                return_images.extend(adv)
+                return_labels = return_labels + [i for _ in range(len(adv))]
         assert len(return_images) == len(return_labels)
         return return_images, return_labels
