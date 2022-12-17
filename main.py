@@ -22,7 +22,7 @@ def main():
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
-    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task)
+    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task, args.adversarial_attacks)
 
     results = []
     for i in range(args.n_experiences):
@@ -53,6 +53,7 @@ def parse_args():
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
+    parser.add_argument('--adversarial_attacks', default='different', choices=('different', 'same'))
     parser.add_argument('--n_experiences', default=6, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
 
@@ -64,7 +65,6 @@ def parse_args():
     parser.add_argument('--num_workers', default=10, type=int)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--n_epochs', default=1, type=int)
-    parser.add_argument('--image_size', default=64, type=int)
 
     args = parser.parse_args()
     return args

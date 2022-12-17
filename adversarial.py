@@ -9,22 +9,25 @@ from data import BaseDataset, read_data
 
 
 class AdversarialExamplesGenerator:
-    def __init__(self, n_experiences, num_classes, num_examples=2000, max_examples_per_epsilon=2000):
+    def __init__(self, n_experiences, num_classes, attacks, num_examples=2000, max_examples_per_epsilon=2000):
         self.num_examples = num_examples
         self.num_classes = num_classes
         self.max_examples_per_epsilon = max_examples_per_epsilon
         self.epsilons = [0.03, 0.1, 0.3, 0.5]
-        self.attacks = [
-            foolbox.attacks.FGSM(),
-            foolbox.attacks.InversionAttack(distance=l2),
-            foolbox.attacks.LinfPGD(),
-            foolbox.attacks.LinfBasicIterativeAttack(),
-            foolbox.attacks.LinfDeepFoolAttack(),
-            foolbox.attacks.LinfAdditiveUniformNoiseAttack()
-        ]
-        if len(self.attacks) < n_experiences:
-            raise ValueError("number of attacks cannot be lower than n_experiences")
-        self.attacks = self.attacks[:n_experiences]
+        if attacks == 'same':
+            self.attacks = [foolbox.attacks.FGSM()] * n_experiences
+        else:
+            self.attacks = [
+                foolbox.attacks.FGSM(),
+                foolbox.attacks.InversionAttack(distance=l2),
+                foolbox.attacks.LinfPGD(),
+                foolbox.attacks.LinfBasicIterativeAttack(),
+                foolbox.attacks.LinfDeepFoolAttack(),
+                foolbox.attacks.LinfAdditiveUniformNoiseAttack()
+            ]
+            if len(self.attacks) < n_experiences:
+                raise ValueError("number of attacks cannot be lower than n_experiences")
+            self.attacks = self.attacks[:n_experiences]
 
     def get_adv_datasets(self, net, t, dataset_name):
         train_images, train_labels, test_images, test_labels = read_data(dataset_name)
