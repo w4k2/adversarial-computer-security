@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument('--n_experiences', default=6, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
 
-    parser.add_argument('--lr', default=0.0001, type=float)
+    parser.add_argument('--lr', default=0.001, type=float)
     parser.add_argument('--momentum', default=0.8, type=float)
     parser.add_argument('--weight_decay', default=1e-6, type=float)
     parser.add_argument('--device', default='cuda', type=str)
