@@ -22,12 +22,13 @@ def main():
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
-    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task, args.adversarial_attacks)
+    adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task, args.adversarial_attacks,
+                                                                    args.dataset, args.seed)
 
     results = []
     for i in range(args.n_experiences):
         if i > 0:
-            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i, args.dataset)
+            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i)
             train_datasets.append(train_dataset)
             test_datasets.append(test_dataset)
             train_stream, test_stream = data.load_data.get_benchmark(train_datasets, test_datasets, args.seed)
