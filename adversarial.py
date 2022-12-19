@@ -78,7 +78,7 @@ class AdversarialExamplesGenerator:
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
-                target_labels = np.random.choice(self.normal_trafic_classes, self.max_examples_per_epsilon).tolist()
+                target_labels = np.random.choice(self.normal_trafic_classes, min(self.max_examples_per_epsilon, len(indicies))).tolist()
                 target_labels = torch.LongTensor(target_labels).cuda()
                 criterion = TargetedMisclassification(target_labels)
                 selected_images = images[indicies]

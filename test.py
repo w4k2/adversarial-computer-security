@@ -11,9 +11,11 @@ from main import seed_everything
 
 def main():
     seed = 42
+    dataset_name = 'CIC-IDS-2017'  # 'USTC-TFC2016'
+
     seed_everything(seed)
     device = torch.device('cuda')
-    train_datasets, test_datasets, classes_per_task = data.get_datasets('USTC-TFC2016', seed)
+    train_datasets, test_datasets, classes_per_task = data.get_datasets(dataset_name, seed)
     train_dataset = train_datasets[0]
     test_dataset = test_datasets[0]
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=10)
@@ -37,7 +39,7 @@ def main():
             # break
         test(device, test_dataloader, model, epoch)
 
-    adversarial_examples = adversarial.AdversarialExamplesGenerator(20, classes_per_task, 'same', 'USTC-TFC2016', seed)
+    adversarial_examples = adversarial.AdversarialExamplesGenerator(20, classes_per_task, 'same', dataset_name, seed)
     _, test_dataset_adv = adversarial_examples.get_adv_datasets(model, 0)
     test_dataloader_adv = torch.utils.data.DataLoader(test_dataset_adv, batch_size=32, shuffle=False, num_workers=10)
 
