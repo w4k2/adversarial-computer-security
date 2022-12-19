@@ -1,8 +1,10 @@
 import foolbox.attacks
 import torch
+import numpy as np
 
 from foolbox import PyTorchModel
 from foolbox.distances import l2
+from foolbox.criteria import TargetedMisclassification
 from sklearn.utils import shuffle
 
 from data import BaseDataset, read_data
@@ -16,20 +18,20 @@ class AdversarialExamplesGenerator:
         self.seed = seed
 
         if dataset_name == 'USTC-TFC2016':
-            self.resample_classes = [0, 1, 2, 3, 4]
+            self.normal_trafic_classes = [0, 1, 2, 3, 4]
         elif dataset_name == 'CIC-IDS-2017':
-            self.resample_classes = [0]
+            self.normal_trafic_classes = [0]
         else:
             raise ValueError("Invalid dataset name")
 
         _, labels, _, _ = read_data(self.dataset_name)
-        labels, label_counts = torch.unique(labels, return_counts=True)
-        selected_counts = [label_counts[i] // n_experiences for i in self.resample_classes]
-        self.max_examples_per_epsilon = min(max_examples_per_epsilon, max(selected_counts) // 4)
+        _, label_counts = torch.unique(labels, return_counts=True)
+        selected_counts = [label_counts[i] // n_experiences for i in self.normal_trafic_classes]
+        self.max_examples_per_epsilon = min(max_examples_per_epsilon, int(max(selected_counts)))
 
-        self.epsilons = [0.03, 0.1, 0.3, 0.5]
+        self.epsilons = [0.5]
         if attacks == 'same':
-            self.attacks = [foolbox.attacks.FGSM()] * n_experiences
+            self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=200)] * n_experiences
         else:
             self.attacks = [
                 foolbox.attacks.FGSM(),
@@ -66,7 +68,7 @@ class AdversarialExamplesGenerator:
         for i in range(self.num_classes):
             indicies = torch.argwhere(labels == i).flatten()
 
-            if i in self.resample_classes:
+            if i in self.normal_trafic_classes:
                 fold_size = len(indicies) // self.n_experiences
                 idx = indicies[fold_size*t:fold_size*(t+1)]
                 adversarial_examples = images[idx]
@@ -76,7 +78,14 @@ class AdversarialExamplesGenerator:
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
-                _, adversarial_examples, _ = attack(fmodel, images[indicies], labels[indicies], epsilons=self.epsilons)
+                target_labels = np.random.choice(self.normal_trafic_classes, self.max_examples_per_epsilon).tolist()
+                target_labels = torch.LongTensor(target_labels).cuda()
+                criterion = TargetedMisclassification(target_labels)
+                selected_images = images[indicies]
+                _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
+                adversarial_examples = torch.cat(adversarial_examples, dim=0)
+                selected_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
+                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, selected_criterion, epsilons=self.epsilons)
 
                 for adv in adversarial_examples:
                     return_images.append(adv.cpu())
