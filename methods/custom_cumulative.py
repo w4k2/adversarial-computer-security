@@ -73,4 +73,6 @@ class CumulativeModified(SupervisedTemplate):
             num_workers=num_workers,
             batch_size=self.train_mb_size,
             shuffle=shuffle,
-            pin_memory=pin_memory)
+            pin_memory=pin_memory,
+            **kwargs
+        )

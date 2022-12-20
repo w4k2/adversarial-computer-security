@@ -35,10 +35,47 @@ def main():
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
-        strategy.train(train_task, eval_stream, num_workers=20)
+        compute_conf_matrix(test_datasets[-1], model, device, i)
+
+        strategy.train(train_task, eval_stream, num_workers=20, drop_last=True)
         selected_tasks = [test_stream[j] for j in range(i+1)]
         eval_results = strategy.eval(selected_tasks)
         results.append(eval_results)
+
+
+def compute_conf_matrix(test_dataset, model, device, task_id):
+    from sklearn.metrics import confusion_matrix
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=100, num_workers=20)
+
+    target_all = []
+    pred_all = []
+    model.to(device)
+
+    with torch.no_grad():
+        for test_inp, test_target in test_dataloader:
+            test_inp = test_inp.to(device)
+            test_y_pred = model(test_inp)
+            test_y_pred = test_y_pred.argmax(dim=1).cpu()
+
+            target_all.append(test_target)
+            pred_all.append(test_y_pred)
+
+    target_all = torch.cat(target_all).flatten().cpu().numpy()
+    pred_all = torch.cat(pred_all).flatten().cpu().numpy()
+    conf_matrix = confusion_matrix(target_all, pred_all)
+    np.save('conf_matrix_task_{task_id}.npy', conf_matrix)
+    # print(result)
+
+    plt.figure()
+    sns.set(font_scale=1.4)
+    ax = sns.heatmap(conf_matrix, annot=True, annot_kws={"size": 16})
+    ax.set_xlabel('Predicted label')
+    ax.set_ylabel('True label')
+    # plt.show()
+    plt.savefig(f'conf_matrix_task_{task_id}.png')
+    plt.close()
 
 
 def parse_args():

@@ -48,20 +48,21 @@ def main():
 
 
 def test(device, test_dataloader, model, epoch=None, show_preds=False):
-    acc = 0
-    num_all = 0
-    for test_inp, test_target in test_dataloader:
-        test_inp = test_inp.to(device)
-        test_y_pred = model(test_inp)
-        test_y_pred = test_y_pred.argmax(dim=1).cpu()
-        acc += (test_y_pred == test_target).sum()
-        num_all += len(test_target)
-        if show_preds:
-            for pred, t in zip(test_y_pred, test_target):
-                print(f'predicted: {pred}, true target {t}')
-    acc = acc / num_all
-    print()
-    print(f'epoch: {epoch}, acc = {acc}')
+    with torch.no_grad():
+        acc = 0
+        num_all = 0
+        for test_inp, test_target in test_dataloader:
+            test_inp = test_inp.to(device)
+            test_y_pred = model(test_inp)
+            test_y_pred = test_y_pred.argmax(dim=1).cpu()
+            acc += (test_y_pred == test_target).sum()
+            num_all += len(test_target)
+            if show_preds:
+                for pred, t in zip(test_y_pred, test_target):
+                    print(f'predicted: {pred}, true target {t}')
+        acc = acc / num_all
+        print()
+        print(f'epoch: {epoch}, acc = {acc}')
 
 
 if __name__ == '__main__':
