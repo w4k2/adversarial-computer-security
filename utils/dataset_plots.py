@@ -55,7 +55,7 @@ def main():
 
 
 def plot_tasks(axes, axis_idx, dataset_name, y_label=False):
-    train_datasets, test_datasets, classes_per_task = data.get_datasets(dataset_name, seed=42)
+    train_datasets, test_datasets, classes_per_task = data.get_datasets(dataset_name, 20)
     train_stream, _ = data.get_benchmark(train_datasets, test_datasets, seed=42)
     model = torchvision.models.resnet.resnet18(num_classes=classes_per_task, pretrained=False)
     adversarial_examples = adversarial.AdversarialExamplesGenerator(20, classes_per_task, 'same', dataset_name, seed=42)

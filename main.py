@@ -17,7 +17,7 @@ def main():
     seed_everything(args.seed)
 
     device = torch.device(args.device)
-    train_datasets, test_datasets, classes_per_task = data.get_datasets(args.dataset, args.seed)
+    train_datasets, test_datasets, classes_per_task = data.get_datasets(args.dataset, args.n_experiences)
     train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences

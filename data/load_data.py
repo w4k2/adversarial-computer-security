@@ -27,14 +27,17 @@ class BaseDataset(torch.utils.data.Dataset):
         return x, y
 
 
-def get_datasets(dataset_name, seed):
+def get_datasets(dataset_name, n_experiences):
     train_datasets = []
     test_datasets = []
 
     train_images, train_labels, test_images, test_labels = read_data(dataset_name)
+    num_classes = len(np.unique(train_labels))
+    train_images, train_labels = select_data(train_images, train_labels, num_classes, n_experiences)
+    test_images, test_labels = select_data(test_images, test_labels, num_classes, n_experiences)
+
     train_dataset = BaseDataset(train_images, train_labels)
     test_dataset = BaseDataset(test_images, test_labels)
-    num_classes = len(np.unique(train_labels))
 
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
@@ -52,8 +55,8 @@ def read_data(dataset_name):
     test_labels = torch.LongTensor(test_labels)
 
     train_transforms, test_transform = get_transform(dataset_name)
-    train_images = [train_transforms(img) for img in train_images]
-    test_images = [test_transform(img) for img in test_images]
+    train_images = torch.stack([train_transforms(img) for img in train_images])
+    test_images = torch.stack([test_transform(img) for img in test_images])
 
     return train_images, train_labels, test_images, test_labels
 
@@ -86,6 +89,23 @@ def get_transform(dataset_name):
             transforms.Lambda(lambda x: x.repeat(3, 1, 1))
         ])
     return train_transforms, test_transforms
+
+
+def select_data(images, labels, num_classes, n_experiences):
+    new_images = []
+    new_labels = []
+    for i in range(num_classes):
+        indicies = torch.argwhere(labels == i).flatten()
+        fold_size = len(indicies) // n_experiences
+        shuffle_idx = torch.randperm(len(indicies))
+        indicies = indicies[shuffle_idx]
+        idx = indicies[:fold_size]
+        new_images.append(images[idx])
+        new_labels.append(labels[idx])
+
+    new_images = torch.cat(new_images, dim=0)
+    new_labels = torch.cat(new_labels, dim=0)
+    return new_images, new_labels
 
 
 def get_benchmark(train_datasets, test_datasets, seed):
