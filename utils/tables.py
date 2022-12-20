@@ -7,6 +7,11 @@ import numpy as np
 def main():
     runs_domain_incremental_20_same = {
         'Upperbound': [['8020747bea454670a3e1f4bebe9336c0']],
+        'ewc': [['c4781fc3a4094e2d9788e051e44d4201']],
+        'lwf': [['b1375659bafb4871bb5d5db7284cf450']],
+        'mir': [['1e479139f7344b1a9e2cd55d5a3f4a6e']],
+        'agem': [['7e6e107584c346a0a4599368e478b9a9']],
+        'replay': [['b8dc92ce9cd34e82a639f976dffbd5e5']],
     }
 
     current_path = pathlib.Path().absolute()
