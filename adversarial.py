@@ -83,6 +83,7 @@ class AdversarialExamplesGenerator:
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
+
                 new_labels = np.random.choice(self.normal_trafic_classes, min(self.max_examples_per_epsilon, len(indicies))).tolist()
                 new_labels = torch.LongTensor(new_labels).cuda()
                 criterion = TargetedMisclassification(new_labels)
@@ -90,6 +91,11 @@ class AdversarialExamplesGenerator:
                 _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
                 adversarial_examples = torch.cat(adversarial_examples, dim=0)
                 selected_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
+                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, selected_criterion, epsilons=self.epsilons)
+
+                adversarial_examples = torch.cat(adversarial_examples, dim=0)
+                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, criterion, epsilons=self.epsilons)
+                adversarial_examples = torch.cat(adversarial_examples, dim=0)
                 _, adversarial_examples, _ = attack(fmodel, adversarial_examples, selected_criterion, epsilons=self.epsilons)
 
                 for adv in adversarial_examples:
