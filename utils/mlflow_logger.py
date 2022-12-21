@@ -67,18 +67,14 @@ class MLFlowLogger(BaseLogger):
             new_name = f'{phase}_{metric_name}'
         return new_name
 
-    def log_conf_matrix(self, matrix: torch.Tensor):
-        plt.figure()
-        ax = sn.heatmap(matrix, annot=False)
-        ax.set_xlabel('Predicted label')
-        ax.set_ylabel('True label')
-
+    def log_artifact(self, artifact_path, name):
         with SwapArtifactUri(self.experiment_id, self.run_id):
-            with tempfile.TemporaryDirectory() as tmpdir:
-                save_path = pathlib.Path(tmpdir) / f"test_confusion_matrix.jpg"
-                plt.savefig(save_path)
+            active_run = mlflow.active_run()
+            if active_run is not None and active_run.info.run_id == self.run_id:
+                mlflow.log_artifact(artifact_path, name)
+            else:
                 with mlflow.start_run(run_id=self.run_id, experiment_id=self.experiment_id, nested=self.nested):
-                    mlflow.log_artifact(save_path, f'test_confusion_matrix')
+                    mlflow.log_artifact(artifact_path, name)
 
     def log_model(self, model: torch.nn.Module):
         with SwapArtifactUri(self.experiment_id, self.run_id):

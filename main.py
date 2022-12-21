@@ -1,3 +1,5 @@
+import mlflow
+import tempfile
 import argparse
 import os
 import random
@@ -38,7 +40,7 @@ def main():
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
-        compute_conf_matrix(test_datasets[-1], model, device, i)
+        compute_conf_matrix(test_datasets[-1], model, device, i, mlf_logger)
 
         strategy.train(train_task, eval_stream, num_workers=20, drop_last=True)
         selected_tasks = [test_stream[j] for j in range(i+1)]
@@ -86,7 +88,7 @@ def seed_everything(seed: int):
     torch.backends.cudnn.benchmark = False
 
 
-def compute_conf_matrix(test_dataset, model, device, task_id):
+def compute_conf_matrix(test_dataset, model, device, task_id, mlf_logger):
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=100, num_workers=20)
 
     target_all = []
@@ -105,17 +107,23 @@ def compute_conf_matrix(test_dataset, model, device, task_id):
     target_all = torch.cat(target_all).flatten().cpu().numpy()
     pred_all = torch.cat(pred_all).flatten().cpu().numpy()
     conf_matrix = confusion_matrix(target_all, pred_all)
-    np.save(f'conf_matrix_task_{task_id}.npy', conf_matrix)
-    # print(result)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        numpy_path = tmpdir + f'/conf_matrix_task_{task_id}.npy'
+        np.save(numpy_path, conf_matrix)
+        # print(result)
 
-    plt.figure()
-    sns.set(font_scale=1.4)
-    ax = sns.heatmap(conf_matrix, annot=True, annot_kws={"size": 16})
-    ax.set_xlabel('Predicted label')
-    ax.set_ylabel('True label')
-    # plt.show()
-    plt.savefig(f'conf_matrix_task_{task_id}.png')
-    plt.close()
+        plt.figure()
+        sns.set(font_scale=1.4)
+        ax = sns.heatmap(conf_matrix, annot=True, annot_kws={"size": 16})
+        ax.set_xlabel('Predicted label')
+        ax.set_ylabel('True label')
+        # plt.show()
+        plot_path = tmpdir + f'/conf_matrix_task_{task_id}.png'
+        plt.savefig(plot_path)
+        plt.close()
+
+        mlf_logger.log_artifact(numpy_path, f'test_set_confusion_matrix_before_training_task_{task_id}')
+        mlf_logger.log_artifact(plot_path, f'test_set_confusion_matrix_before_training_task_{task_id}')
 
 
 if __name__ == '__main__':
