@@ -46,8 +46,8 @@ class AdversarialExamplesGenerator:
                 foolbox.attacks.LinfDeepFoolAttack(steps=200),
                 # foolbox.attacks.LinfAdditiveUniformNoiseAttack()
             ]
-            if len(self.attacks) < n_experiences:
-                raise ValueError("number of attacks cannot be lower than n_experiences")
+            if len(self.attacks) + 1 < n_experiences:
+                raise ValueError("number of attacks cannot be lower than n_experiences + 1")
             self.attacks = self.attacks[:n_experiences]
 
     def get_adv_datasets(self, net, t):
