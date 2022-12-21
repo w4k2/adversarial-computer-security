@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from foolbox import PyTorchModel
-from foolbox.distances import l2
+from foolbox.distances import l0, l1, l2, linf
 from foolbox.criteria import TargetedMisclassification
 from sklearn.utils import shuffle
 
@@ -31,15 +31,20 @@ class AdversarialExamplesGenerator:
 
         self.epsilons = [0.5]
         if attacks == 'same':
-            self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=200)] * n_experiences
+            self.attacks = [foolbox.attacks.LinfPGD(steps=200)] * n_experiences
         else:
             self.attacks = [
-                foolbox.attacks.FGSM(),
+                # foolbox.attacks.InversionAttack(distance=l0),
+                foolbox.attacks.InversionAttack(distance=l1),
                 foolbox.attacks.InversionAttack(distance=l2),
-                foolbox.attacks.LinfPGD(),
-                foolbox.attacks.LinfBasicIterativeAttack(),
-                foolbox.attacks.LinfDeepFoolAttack(),
-                foolbox.attacks.LinfAdditiveUniformNoiseAttack()
+                foolbox.attacks.InversionAttack(distance=linf),
+                foolbox.attacks.LinfPGD(steps=200),  # w
+                foolbox.attacks.L1BasicIterativeAttack(steps=200),
+                foolbox.attacks.L2BasicIterativeAttack(steps=200),
+                foolbox.attacks.LinfBasicIterativeAttack(steps=200),  # w
+                foolbox.attacks.L2DeepFoolAttack(steps=200),
+                foolbox.attacks.LinfDeepFoolAttack(steps=200),
+                # foolbox.attacks.LinfAdditiveUniformNoiseAttack()
             ]
             if len(self.attacks) < n_experiences:
                 raise ValueError("number of attacks cannot be lower than n_experiences")
