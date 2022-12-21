@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from foolbox import PyTorchModel
-from foolbox.distances import l0, l1, l2, linf
+from foolbox.distances import l1, l2, linf
 from foolbox.criteria import TargetedMisclassification
 from sklearn.utils import shuffle
 
@@ -31,10 +31,10 @@ class AdversarialExamplesGenerator:
 
         self.epsilons = [0.5]
         if attacks == 'same':
-            self.attacks = [foolbox.attacks.LinfPGD(steps=200)] * n_experiences
+            self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 4 + \
+                [foolbox.attacks.LinfBasicIterativeAttack(steps=100)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200)] * 2
         else:
             self.attacks = [
-                # foolbox.attacks.InversionAttack(distance=l0),
                 foolbox.attacks.InversionAttack(distance=l1),
                 foolbox.attacks.InversionAttack(distance=l2),
                 foolbox.attacks.InversionAttack(distance=linf),
@@ -83,20 +83,15 @@ class AdversarialExamplesGenerator:
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
-
-                new_labels = np.random.choice(self.normal_trafic_classes, min(self.max_examples_per_epsilon, len(indicies))).tolist()
-                new_labels = torch.LongTensor(new_labels).cuda()
-                criterion = TargetedMisclassification(new_labels)
                 selected_images = images[indicies]
+
+                new_labels = self.get_similar_classes(model, selected_images)
+                criterion = TargetedMisclassification(new_labels)
                 _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
                 adversarial_examples = torch.cat(adversarial_examples, dim=0)
-                selected_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
-                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, selected_criterion, epsilons=self.epsilons)
 
-                adversarial_examples = torch.cat(adversarial_examples, dim=0)
-                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, criterion, epsilons=self.epsilons)
-                adversarial_examples = torch.cat(adversarial_examples, dim=0)
-                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, selected_criterion, epsilons=self.epsilons)
+                labels_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
+                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, labels_criterion, epsilons=self.epsilons)
 
                 for adv in adversarial_examples:
                     return_images.append(adv.cpu())
@@ -105,3 +100,10 @@ class AdversarialExamplesGenerator:
         return_labels = torch.LongTensor(return_labels)
         assert len(return_images) == len(return_labels)
         return return_images, return_labels
+
+    def get_similar_classes(self, model, images):
+        with torch.no_grad():
+            y_pred = model(images)
+            y_pred = torch.cat([y_pred[:, i:i+1] for i in self.normal_trafic_classes], dim=1)
+            labels = torch.argmax(y_pred, dim=1, keepdim=False)
+            return labels.long()
