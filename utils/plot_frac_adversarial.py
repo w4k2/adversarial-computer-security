@@ -5,11 +5,11 @@ import seaborn as sns
 
 
 def main():
-    artifacts_path = pathlib.Path('/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/ae9a3ada627f43ea8d7dbf91ec1de8b7/artifacts/')
+    artifacts_path = pathlib.Path('/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/b59d1b67d31e4c4e97373e3fd0cc209f/artifacts/')
 
     missclassifed_frac = []
     error_rate = []
-    for task_id in range(10):  # 10 - 11 tasks
+    for task_id in range(9):  # 10 - 11 tasks
         file_path = artifacts_path / f'test_set_confusion_matrix_before_training_task_{task_id}/conf_matrix_task_{task_id}.npy'
         conf_matrix = np.load(file_path)
         missclassifed_pred = conf_matrix[5:, :5].sum()
