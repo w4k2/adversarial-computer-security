@@ -2,9 +2,7 @@ import yaml
 import os
 import pathlib
 import tempfile
-import matplotlib.pyplot as plt
 import torch
-import seaborn as sn
 import re
 from avalanche.logging import BaseLogger
 import mlflow
@@ -19,7 +17,9 @@ class MLFlowLogger(BaseLogger):
         client = mlflow.tracking.MlflowClient()
         self.experiment = client.get_experiment_by_name(experiment_name)
         if self.experiment is None:
-            id = mlflow.create_experiment(experiment_name)
+            new_id = self.find_last_exp_id(client) + 1
+            artifact_location = repo_dir() / 'mlruns' / str(new_id)
+            id = mlflow.create_experiment(experiment_name, artifact_location=str(artifact_location))
             self.experiment = client.get_experiment(id)
         self.experiment_id = self.experiment.experiment_id
         self.nested = nested
@@ -28,6 +28,16 @@ class MLFlowLogger(BaseLogger):
             with mlflow.start_run(experiment_id=self.experiment_id, run_name=run_name, nested=nested):
                 active_run = mlflow.active_run()
                 self.run_id = active_run.info.run_id
+
+    def find_last_exp_id(self, client):
+        last_id = -1
+        for i in range(100):
+            try:
+                client.get_experiment(str(i))
+            except:
+                break
+            last_id = i
+        return last_id
 
     def log_parameters(self, parameters: dict):
         with mlflow.start_run(run_id=self.run_id, experiment_id=self.experiment_id, nested=self.nested):
