@@ -54,15 +54,15 @@ class AdversarialExamplesGenerator:
         train_images, train_labels = train_dataset.images, train_dataset.targets
         test_images, test_labels = test_dataset.images, test_dataset.targets
 
-        train_advs, train_labels = self.generate_adversarial_examples(net, train_images, train_labels, t)
-        test_advs, test_labels = self.generate_adversarial_examples(net, test_images, test_labels, t)
+        train_advs, train_labels = self.generate_adversarial_examples(net, train_images, train_labels, t, train=True)
+        test_advs, test_labels = self.generate_adversarial_examples(net, test_images, test_labels, t, train=False)
 
         train_dataset = BaseDataset(train_advs, train_labels)
         test_dataset = BaseDataset(test_advs, test_labels)
 
         return train_dataset, test_dataset
 
-    def generate_adversarial_examples(self, model, images, labels, t):
+    def generate_adversarial_examples(self, model, images, labels, t, train=True):
         attack = self.attacks[t-1]
         return_images = []
         return_labels = []
@@ -72,15 +72,26 @@ class AdversarialExamplesGenerator:
         model.eval()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         for i in range(self.num_classes):
-            indicies = torch.argwhere(labels == i).flatten()
 
+            print(f'i = {i}')
             if i in self.normal_trafic_classes:
+                train_images, train_labels, test_images, test_labels = read_data(self.dataset_name)
+                if train:
+                    indicies = torch.argwhere(train_labels == i).flatten()
+                else:
+                    indicies = torch.argwhere(test_labels == i).flatten()
                 fold_size = len(indicies) // self.n_experiences
                 idx = indicies[fold_size*t:fold_size*(t+1)]
-                adversarial_examples = images[idx]
+                if train:
+                    adversarial_examples = train_images[idx]
+                else:
+                    adversarial_examples = test_images[idx]
+                print('\n\nnormal trafic adversarial_examples len = ', len(adversarial_examples))
                 return_images.append(adversarial_examples.cpu())
                 return_labels = return_labels + [i for _ in range(len(adversarial_examples))]
             else:
+                indicies = torch.argwhere(labels == i).flatten()
+                print('other classes')
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
