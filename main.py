@@ -1,4 +1,3 @@
-import mlflow
 import tempfile
 import argparse
 import os
@@ -40,7 +39,8 @@ def main():
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
-        compute_conf_matrix(test_datasets[-1], model, device, i, mlf_logger)
+        log_conf_matrix(test_datasets[-1], model, device, i, mlf_logger)
+        log_images(test_datasets[-1], i, classes_per_task, mlf_logger)
 
         strategy.train(train_task, eval_stream, num_workers=20, drop_last=True)
         selected_tasks = [test_stream[j] for j in range(i+1)]
@@ -88,7 +88,7 @@ def seed_everything(seed: int):
     torch.backends.cudnn.benchmark = False
 
 
-def compute_conf_matrix(test_dataset, model, device, task_id, mlf_logger):
+def log_conf_matrix(test_dataset, model, device, task_id, mlf_logger):
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=100, num_workers=20)
 
     target_all = []
@@ -111,6 +111,7 @@ def compute_conf_matrix(test_dataset, model, device, task_id, mlf_logger):
         numpy_path = tmpdir + f'/conf_matrix_task_{task_id}.npy'
         np.save(numpy_path, conf_matrix)
         # print(result)
+        mlf_logger.log_artifact(numpy_path, f'test_set_confusion_matrix_before_training_task_{task_id}')
 
         plt.figure()
         sns.set(font_scale=1.4)
@@ -121,9 +122,28 @@ def compute_conf_matrix(test_dataset, model, device, task_id, mlf_logger):
         plot_path = tmpdir + f'/conf_matrix_task_{task_id}.png'
         plt.savefig(plot_path)
         plt.close()
-
-        mlf_logger.log_artifact(numpy_path, f'test_set_confusion_matrix_before_training_task_{task_id}')
         mlf_logger.log_artifact(plot_path, f'test_set_confusion_matrix_before_training_task_{task_id}')
+
+
+def log_images(test_dataset, task_id, num_classes, mlf_logger):
+    import torchvision.transforms as transf
+    to_pil = transf.ToPILImage()
+    i = 0
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for class_id in range(num_classes):
+            images = test_dataset.images[test_dataset.targets == class_id]
+            targets = test_dataset.targets[test_dataset.targets == class_id]
+            images = images[:10]
+            targets = targets[:10]
+
+            for img, label in zip(images, targets):
+                img = to_pil(img)
+                label = int(label)
+                image_path = tmpdir + f'/test_image_task_{task_id}_img_{i}_label_{label}.png'
+                i += 1
+                img.save(image_path)
+                mlf_logger.log_artifact(image_path, f'test_set_images_task_{task_id}')
 
 
 if __name__ == '__main__':
