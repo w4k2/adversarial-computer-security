@@ -32,7 +32,7 @@ def main():
     results = []
     for i in range(args.n_experiences):
         if i > 0:
-            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i)
+            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i, train_datasets[-1], test_datasets[-1])
             train_datasets.append(train_dataset)
             test_datasets.append(test_dataset)
             train_stream, test_stream = data.load_data.get_benchmark(train_datasets, test_datasets, args.seed)

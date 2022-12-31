@@ -50,8 +50,9 @@ class AdversarialExamplesGenerator:
                 raise ValueError("number of attacks cannot be lower than n_experiences + 1")
             self.attacks = self.attacks[:n_experiences]
 
-    def get_adv_datasets(self, net, t):
-        train_images, train_labels, test_images, test_labels = read_data(self.dataset_name)
+    def get_adv_datasets(self, net, t, train_dataset, test_dataset):
+        train_images, train_labels = train_dataset.images, train_dataset.targets
+        test_images, test_labels = test_dataset.images, test_dataset.targets
 
         train_advs, train_labels = self.generate_adversarial_examples(net, train_images, train_labels, t)
         test_advs, test_labels = self.generate_adversarial_examples(net, test_images, test_labels, t)
