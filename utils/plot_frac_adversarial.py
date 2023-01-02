@@ -5,7 +5,7 @@ import seaborn as sns
 
 
 def main():
-    artifacts_path = pathlib.Path('/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/ca1931691acb4a709e9e2f51c56b992a/artifacts/')
+    artifacts_path = pathlib.Path('/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/13865cb5dd1e4da0a28e14eaa1eed08e/artifacts/')
 
     missclassifed_frac = []
     error_rate = []

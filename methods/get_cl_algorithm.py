@@ -17,7 +17,7 @@ from methods.debug_plugin import DebugPlugin
 from methods.mir import *
 
 
-def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
+def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow=True):
     loggers = list()
     if args.interactive_logger:
         loggers.append(InteractiveLogger())
@@ -43,7 +43,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
         plugins.append(DebugPlugin())
 
     if args.method == 'cumulative':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = CumulativeModified(model, optimizer, criterion,
@@ -52,7 +52,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                                       evaluator=evaluation_plugin, eval_every=-1
                                       )
     elif args.method == 'naive':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = Naive(model, optimizer, criterion,
@@ -61,7 +61,7 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                          evaluator=evaluation_plugin, eval_every=-1
                          )
     elif args.method == 'ewc':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=0.0)
         criterion = nn.CrossEntropyLoss()
         ewc_lambda = 1000
@@ -69,42 +69,42 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
                        ewc_lambda=ewc_lambda, train_mb_size=args.batch_size, eval_mb_size=args.batch_size,
                        device=device, train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin)
     elif args.method == 'gem':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = GEM(model, optimizer, criterion, patterns_per_exp=250,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'agem':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = AGEMModified(model, optimizer, criterion, patterns_per_exp=500, sample_size=256,
                                 train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                                 train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'replay':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = ReplayModified(model, optimizer, criterion, mem_size=250*args.n_experiences,
                                   train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                                   train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'lwf':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = LwF(model, optimizer, criterion, alpha=1.0, temperature=1.0,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'mir':
-        model = resnet.resnet18(num_classes=classes_per_task, pretrained=args.pretrained)
+        model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
         strategy = Mir(model, optimizer, criterion, patterns_per_exp=250, sample_size=50,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'icarl':
-        model: IcarlNet = make_icarl_net(num_classes=classes_per_task)
+        model: IcarlNet = make_icarl_net(num_classes=num_classes)
         model.apply(initialize_icarl_net)
 
         optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9)
@@ -119,3 +119,10 @@ def get_cl_algorithm(args, device, classes_per_task, use_mlflow=True):
         )
 
     return strategy, model, mlf_logger
+
+
+def get_resnet(num_classes, single_input_channel=False):
+    model = resnet.resnet18(num_classes=num_classes)
+    if single_input_channel:
+        model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    return model

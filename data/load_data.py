@@ -79,14 +79,14 @@ def get_transform(dataset_name):
             transforms.Pad(2),
             transforms.ToTensor(),
             transforms.Normalize([0.1], [0.2752]),
-            transforms.Lambda(lambda x: x.repeat(3, 1, 1))
+            # transforms.Lambda(lambda x: x.repeat(3, 1, 1))
         ])
         test_transforms = transforms.Compose([
             transforms.Lambda(lambda x: PIL.Image.fromarray(np.squeeze(np.swapaxes(x, 0, 2)).astype(np.uint8))),
             transforms.Pad(2),
             transforms.ToTensor(),
             transforms.Normalize([0.1], [0.2752]),
-            transforms.Lambda(lambda x: x.repeat(3, 1, 1))
+            # transforms.Lambda(lambda x: x.repeat(3, 1, 1))
         ])
     return train_transforms, test_transforms
 

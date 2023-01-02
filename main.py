@@ -25,7 +25,7 @@ def main():
     train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
-    strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, use_mlflow=not args.debug)
+    strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, single_channel=args.dataset == 'USTC-TFC2016', use_mlflow=not args.debug)
     adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task, args.adversarial_attacks,
                                                                     args.dataset, args.seed)
 
