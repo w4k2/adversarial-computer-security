@@ -31,8 +31,9 @@ class AdversarialExamplesGenerator:
 
         self.epsilons = [0.5]
         if attacks == 'same':
-            self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
-                [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
+            # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
+            #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
+            self.attacks = [foolbox.attacks.L2ClippingAwareRepeatedAdditiveGaussianNoiseAttack(repeats=50)] * 10
         else:
             self.attacks = [
                 foolbox.attacks.InversionAttack(distance=l1),
