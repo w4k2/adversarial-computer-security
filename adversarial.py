@@ -33,14 +33,12 @@ class AdversarialExamplesGenerator:
         if attacks == 'same':
             # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
             #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
-            self.attacks = [foolbox.attacks.LinfDeepFoolAttack(steps=100)] * 10
+            self.attacks = [foolbox.attacks.LinfBasicIterativeAttack()] * 19
         else:
             self.attacks = [
                 foolbox.attacks.LinfPGD(steps=200),  # w
                 foolbox.attacks.LinfBasicIterativeAttack(steps=200),  # w
-                foolbox.attacks.L2DeepFoolAttack(steps=200),
                 foolbox.attacks.LinfDeepFoolAttack(steps=200),
-                # foolbox.attacks.LinfAdditiveUniformNoiseAttack()
             ]
             if len(self.attacks) + 1 < n_experiences:
                 raise ValueError("number of attacks cannot be lower than n_experiences + 1")
