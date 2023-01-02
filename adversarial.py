@@ -33,15 +33,10 @@ class AdversarialExamplesGenerator:
         if attacks == 'same':
             # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
             #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
-            self.attacks = [foolbox.attacks.L2ClippingAwareRepeatedAdditiveGaussianNoiseAttack(repeats=50)] * 10
+            self.attacks = [foolbox.attacks.LinfDeepFoolAttack(steps=100)] * 10
         else:
             self.attacks = [
-                foolbox.attacks.InversionAttack(distance=l1),
-                foolbox.attacks.InversionAttack(distance=l2),
-                foolbox.attacks.InversionAttack(distance=linf),
                 foolbox.attacks.LinfPGD(steps=200),  # w
-                foolbox.attacks.L1BasicIterativeAttack(steps=200),
-                foolbox.attacks.L2BasicIterativeAttack(steps=200),
                 foolbox.attacks.LinfBasicIterativeAttack(steps=200),  # w
                 foolbox.attacks.L2DeepFoolAttack(steps=200),
                 foolbox.attacks.LinfDeepFoolAttack(steps=200),
@@ -73,8 +68,6 @@ class AdversarialExamplesGenerator:
         model.eval()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         for i in range(self.num_classes):
-
-            print(f'i = {i}')
             if i in self.normal_trafic_classes:
                 train_images, train_labels, test_images, test_labels = read_data(self.dataset_name)
                 if train:
@@ -87,12 +80,10 @@ class AdversarialExamplesGenerator:
                     adversarial_examples = train_images[idx]
                 else:
                     adversarial_examples = test_images[idx]
-                print('\n\nnormal trafic adversarial_examples len = ', len(adversarial_examples))
                 return_images.append(adversarial_examples.cpu())
                 return_labels = return_labels + [i for _ in range(len(adversarial_examples))]
             else:
                 indicies = torch.argwhere(labels == i).flatten()
-                print('other classes')
                 shuffle_idx = torch.randperm(len(indicies))
                 indicies = indicies[shuffle_idx]
                 indicies = indicies[:self.max_examples_per_epsilon]
