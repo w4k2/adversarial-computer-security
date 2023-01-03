@@ -39,8 +39,9 @@ class AdversarialExamplesGenerator:
             self.attacks = [
                 foolbox.attacks.LinfPGD(steps=200),  # w
                 foolbox.attacks.LinfBasicIterativeAttack(steps=200),  # w
-                foolbox.attacks.LinfDeepFoolAttack(steps=200),
-            ]
+                # foolbox.attacks.LinfDeepFoolAttack(steps=200),
+                TsAIL(steps=100, rel_stepsize=0.4),
+            ] * 7
             if len(self.attacks) + 1 < n_experiences:
                 raise ValueError("number of attacks cannot be lower than n_experiences + 1")
             self.attacks = self.attacks[:n_experiences]
