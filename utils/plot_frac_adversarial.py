@@ -2,10 +2,15 @@ import numpy as np
 import pathlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import argparse
 
 
 def main():
-    artifacts_path = pathlib.Path('/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/3f960cc551ed43d896aaf1e5691865d2/artifacts/')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run_id', required=True, type=str)
+    args = parser.parse_args()
+
+    artifacts_path = pathlib.Path(f'/home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/0/{args.run_id}/artifacts/')
 
     missclassifed_frac = []
     error_rate = []
