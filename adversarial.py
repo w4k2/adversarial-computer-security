@@ -92,10 +92,10 @@ class AdversarialExamplesGenerator:
                 new_labels = self.get_similar_classes(model, selected_images)
                 criterion = TargetedMisclassification(new_labels)
                 _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
-                adversarial_examples = torch.cat(adversarial_examples, dim=0)
+                # adversarial_examples = torch.cat(adversarial_examples, dim=0)
 
-                labels_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
-                _, adversarial_examples, _ = attack(fmodel, adversarial_examples, labels_criterion, epsilons=self.epsilons)
+                # labels_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
+                # _, adversarial_examples, _ = attack(fmodel, adversarial_examples, labels_criterion, epsilons=self.epsilons)
 
                 for adv in adversarial_examples:
                     return_images.append(adv.cpu())
