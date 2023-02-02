@@ -27,14 +27,15 @@ class AdversarialExamplesGenerator:
 
         _, labels, _, _ = read_data(self.dataset_name)
         _, label_counts = torch.unique(labels, return_counts=True)
-        selected_counts = [label_counts[i] // n_experiences for i in self.normal_trafic_classes]
-        self.max_examples_per_epsilon = min(max_examples_per_epsilon, int(max(selected_counts)))
+        selected_counts = [label_counts[i].item() // n_experiences for i in self.normal_trafic_classes]
+        self.max_examples_per_epsilon = min(max_examples_per_epsilon, max(selected_counts))
 
         self.epsilons = [0.5]
         if attacks == 'same':
             # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
             #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
-            self.attacks = [TsAIL(steps=100, rel_stepsize=0.4)] * 19
+            # self.attacks = [TsAIL(steps=100, rel_stepsize=0.4)] * 19
+            self.attacks = [foolbox.attacks.LinfPGD(steps=1)] * 19
         else:
             self.attacks = [
                 foolbox.attacks.LinfPGD(steps=200),  # w
@@ -68,38 +69,38 @@ class AdversarialExamplesGenerator:
         model.eval()
         fmodel = PyTorchModel(model, bounds=(-1, 1))
         for i in range(self.num_classes):
-            if i in self.normal_trafic_classes:
-                train_images, train_labels, test_images, test_labels = read_data(self.dataset_name)
-                if train:
-                    indicies = torch.argwhere(train_labels == i).flatten()
-                else:
-                    indicies = torch.argwhere(test_labels == i).flatten()
-                fold_size = len(indicies) // self.n_experiences
-                idx = indicies[fold_size*t:fold_size*(t+1)]
-                if train:
-                    adversarial_examples = train_images[idx]
-                else:
-                    adversarial_examples = test_images[idx]
-                return_images.append(adversarial_examples.cpu())
-                return_labels = return_labels + [i for _ in range(len(adversarial_examples))]
-            else:
-                indicies = torch.argwhere(labels == i).flatten()
-                shuffle_idx = torch.randperm(len(indicies))
-                indicies = indicies[shuffle_idx]
-                indicies = indicies[:self.max_examples_per_epsilon]
-                selected_images = images[indicies]
+            # if i in self.normal_trafic_classes:
+            #     train_images, train_labels, test_images, test_labels = read_data(self.dataset_name)
+            #     if train:
+            #         indicies = torch.argwhere(train_labels == i).flatten()
+            #     else:
+            #         indicies = torch.argwhere(test_labels == i).flatten()
+            #     fold_size = len(indicies) // self.n_experiences
+            #     idx = indicies[fold_size*t:fold_size*(t+1)]
+            #     if train:
+            #         adversarial_examples = train_images[idx]
+            #     else:
+            #         adversarial_examples = test_images[idx]
+            #     return_images.append(adversarial_examples.cpu())
+            #     return_labels = return_labels + [i for _ in range(len(adversarial_examples))]
+            # else:
+            indicies = torch.argwhere(labels == i).flatten()
+            shuffle_idx = torch.randperm(len(indicies))
+            indicies = indicies[shuffle_idx]
+            indicies = indicies[:self.max_examples_per_epsilon]
+            selected_images = images[indicies]
 
-                new_labels = self.get_similar_classes(model, selected_images)
-                criterion = TargetedMisclassification(new_labels)
-                _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
-                # adversarial_examples = torch.cat(adversarial_examples, dim=0)
+            # new_labels = self.get_similar_classes(model, selected_images)
+            # criterion = TargetedMisclassification(new_labels)
+            # _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
+            # adversarial_examples = torch.cat(adversarial_examples, dim=0)
 
-                # labels_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
-                # _, adversarial_examples, _ = attack(fmodel, adversarial_examples, labels_criterion, epsilons=self.epsilons)
+            labels_criterion = torch.LongTensor([i for _ in range(len(selected_images))]).cuda()
+            _, adversarial_examples, _ = attack(fmodel, selected_images, labels_criterion, epsilons=self.epsilons)
 
-                for adv in adversarial_examples:
-                    return_images.append(adv.cpu())
-                    return_labels = return_labels + [i for _ in range(len(adv))]
+            for adv in adversarial_examples:
+                return_images.append(adv.cpu())
+                return_labels = return_labels + [i for _ in range(len(adv))]
         return_images = torch.cat(return_images, dim=0)
         return_labels = torch.LongTensor(return_labels)
         assert len(return_images) == len(return_labels)
