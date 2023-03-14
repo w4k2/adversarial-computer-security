@@ -4,7 +4,7 @@ import torchvision.models.resnet as resnet
 
 from avalanche.logging import InteractiveLogger, TextLogger
 from avalanche.evaluation.metrics import forgetting_metrics, accuracy_metrics, loss_metrics, timing_metrics, StreamConfusionMatrix
-from avalanche.training.supervised import EWC, GEM, LwF, Naive, ICaRL
+from avalanche.training.supervised import EWC, GEM, LwF, Naive, ICaRL, GDumb
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.training.plugins.lr_scheduling import LRSchedulerPlugin
 from avalanche.models import IcarlNet, make_icarl_net, initialize_icarl_net
@@ -117,8 +117,20 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
             train_epochs=args.n_epochs, eval_mb_size=args.batch_size,
             plugins=plugins, device=device, evaluator=evaluation_plugin, eval_every=-1
         )
+    elif args.method == 'gdumb':
+        model = get_resnet(num_classes, single_channel)
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
+        criterion = nn.CrossEntropyLoss()
+        strategy = GDumb(model, optimizer, criterion, mem_size=250*args.n_experiences,
+                         train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
+                         train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
 
     return strategy, model, mlf_logger
+
+# si?
+# GDumb
+# icarl?
+# BiC
 
 
 def get_resnet(num_classes, single_input_channel=False):
