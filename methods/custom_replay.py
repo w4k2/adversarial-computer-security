@@ -1,6 +1,6 @@
 import torch
 import torch.utils.data
-from avalanche.training.templates.supervised import SupervisedTemplate
+from avalanche.training.templates import SupervisedTemplate
 from avalanche.training.plugins.strategy_plugin import SupervisedPlugin
 from avalanche.training.plugins.evaluation import default_evaluator
 from torch.utils.data import RandomSampler

@@ -4,7 +4,7 @@ import torchvision.models.resnet as resnet
 
 from avalanche.logging import InteractiveLogger, TextLogger
 from avalanche.evaluation.metrics import forgetting_metrics, accuracy_metrics, loss_metrics, timing_metrics, StreamConfusionMatrix
-from avalanche.training.supervised import EWC, GEM, LwF, Naive, ICaRL, GDumb
+from avalanche.training.supervised import EWC, GEM, LwF, Naive, ICaRL, GDumb, SynapticIntelligence, BiC
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.training.plugins.lr_scheduling import LRSchedulerPlugin
 from avalanche.models import IcarlNet, make_icarl_net, initialize_icarl_net
@@ -36,7 +36,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         loss_metrics(minibatch=False, epoch=True, experience=True, stream=True),
         timing_metrics(epoch=True),
         loggers=loggers,
-        suppress_warnings=True)
+    )
 
     plugins = list()
     if args.debug:
@@ -124,13 +124,22 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         strategy = GDumb(model, optimizer, criterion, mem_size=250*args.n_experiences,
                          train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                          train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
+    elif args.method == 'si':
+        model = get_resnet(num_classes, single_channel)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        criterion = nn.CrossEntropyLoss()
+        strategy = SynapticIntelligence(model, optimizer, criterion, si_lambda=0.01,
+                                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
+                                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
+    elif args.method == 'bic':
+        model = get_resnet(num_classes, single_channel)
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
+        criterion = nn.CrossEntropyLoss()
+        strategy = BiC(model, optimizer, criterion, mem_size=250*args.n_experiences, val_percentage=0.1, T=2,
+                       train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
+                       train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
 
     return strategy, model, mlf_logger
-
-# si?
-# GDumb
-# icarl?
-# BiC
 
 
 def get_resnet(num_classes, single_input_channel=False):
