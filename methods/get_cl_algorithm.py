@@ -104,7 +104,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'icarl':
-        model: IcarlNet = make_icarl_net(num_classes=num_classes)
+        model: IcarlNet = make_icarl_net(num_classes=num_classes, c=1 if single_channel else 3)
         model.apply(initialize_icarl_net)
 
         optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9)
