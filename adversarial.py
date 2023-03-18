@@ -20,8 +20,10 @@ class AdversarialExamplesGenerator:
 
         if dataset_name == 'USTC-TFC2016':
             self.normal_trafic_classes = [0, 1, 2, 3, 4]
+            self.attack_classes = [5, 6, 7, 8, 9]
         elif dataset_name == 'CIC-IDS-2017':
             self.normal_trafic_classes = [0]
+            self.attack_classes = [1, 2, 3, 4, 5, 6, 7, 8]
         else:
             raise ValueError("Invalid dataset name")
 
@@ -34,8 +36,8 @@ class AdversarialExamplesGenerator:
         if attacks == 'same':
             # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
             #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
-            # self.attacks = [TsAIL(steps=100, rel_stepsize=0.4)] * 19
-            self.attacks = [foolbox.attacks.LinfPGD(steps=100, rel_stepsize=0.4)] * 19
+            self.attacks = [TsAIL(steps=100, rel_stepsize=0.4)] * 19
+            # self.attacks = [foolbox.attacks.LinfPGD(steps=100, rel_stepsize=0.4)] * 19
         else:
             self.attacks = [
                 foolbox.attacks.LinfPGD(steps=200),  # w
@@ -90,10 +92,10 @@ class AdversarialExamplesGenerator:
             indicies = indicies[:self.max_examples_per_epsilon]
             selected_images = images[indicies]
 
-            # new_labels = self.get_similar_classes(model, selected_images)
-            # criterion = TargetedMisclassification(new_labels)
-            # _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
-            # adversarial_examples = torch.cat(adversarial_examples, dim=0)
+            new_labels = self.get_similar_classes(model, selected_images)
+            criterion = TargetedMisclassification(new_labels)
+            _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
+            adversarial_examples = torch.cat(adversarial_examples, dim=0)
 
             labels_criterion = torch.LongTensor([i for _ in range(len(selected_images))]).cuda()
             _, adversarial_examples, _ = attack(fmodel, selected_images, labels_criterion, epsilons=self.epsilons)
@@ -106,9 +108,10 @@ class AdversarialExamplesGenerator:
         assert len(return_images) == len(return_labels)
         return return_images, return_labels
 
-    def get_similar_classes(self, model, images):
+    def get_similar_classes(self, model, images, current_label):
         with torch.no_grad():
             y_pred = model(images)
-            y_pred = torch.cat([y_pred[:, i:i+1] for i in self.normal_trafic_classes], dim=1)
+            opposite_classes = self.normal_trafic_classes if current_label in self.attack_classes else self.attack_classes
+            y_pred = torch.cat([y_pred[:, i:i+1] for i in opposite_classes], dim=1)
             labels = torch.argmax(y_pred, dim=1, keepdim=False)
             return labels.long()
