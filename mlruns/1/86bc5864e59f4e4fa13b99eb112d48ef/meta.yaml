@@ -1,0 +1,15 @@
+artifact_uri: /home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/1/86bc5864e59f4e4fa13b99eb112d48ef/artifacts
+end_time: 1678804911096
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: 86bc5864e59f4e4fa13b99eb112d48ef
+run_uuid: 86bc5864e59f4e4fa13b99eb112d48ef
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1678802732754
+status: 3
+tags: []
+user_id: jedrzejkozal
