@@ -3,3 +3,4 @@ data/
 .vscode
 *.pth
 mlruns/*/artifacts/model
+*.pt

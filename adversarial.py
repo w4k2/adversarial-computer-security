@@ -12,7 +12,7 @@ from utils.tsail import TsAIL
 
 
 class AdversarialExamplesGenerator:
-    def __init__(self, n_experiences, num_classes, attacks, dataset_name, seed, max_examples_per_epsilon=2000):
+    def __init__(self, n_experiences, num_classes, attacks, dataset_name, seed, max_examples_per_epsilon=2000, steps=10, stepsize=0.4, epsilon=0.5):
         self.num_classes = num_classes
         self.dataset_name = dataset_name
         self.n_experiences = n_experiences
@@ -29,14 +29,13 @@ class AdversarialExamplesGenerator:
 
         _, labels, _, _ = read_data(self.dataset_name)
         _, label_counts = torch.unique(labels, return_counts=True)
-        selected_counts = [label_counts[i].item() // n_experiences for i in self.normal_trafic_classes]
-        self.max_examples_per_epsilon = min(max_examples_per_epsilon, max(selected_counts))
+        self.max_examples_per_epsilon = min(max_examples_per_epsilon, max(label_counts).item())
 
-        self.epsilons = [0.5]
+        self.epsilons = [epsilon]
         if attacks == 'same':
             # self.attacks = [foolbox.attacks.LinfBasicIterativeAttack(steps=50)] * 3 + \
             #     [foolbox.attacks.LinfBasicIterativeAttack(steps=100, rel_stepsize=0.4)] * 3 + [foolbox.attacks.LinfBasicIterativeAttack(steps=200, rel_stepsize=0.5)] * 2
-            self.attacks = [TsAIL(steps=100, rel_stepsize=0.4)] * 19
+            self.attacks = [TsAIL(steps=steps, rel_stepsize=stepsize)] * 19
             # self.attacks = [foolbox.attacks.LinfPGD(steps=100, rel_stepsize=0.4)] * 19
         else:
             self.attacks = [
@@ -92,13 +91,13 @@ class AdversarialExamplesGenerator:
             indicies = indicies[:self.max_examples_per_epsilon]
             selected_images = images[indicies]
 
-            new_labels = self.get_similar_classes(model, selected_images)
+            new_labels = self.get_similar_classes(model, selected_images, i)
             criterion = TargetedMisclassification(new_labels)
             _, adversarial_examples, _ = attack(fmodel, selected_images, criterion, epsilons=self.epsilons)
             adversarial_examples = torch.cat(adversarial_examples, dim=0)
 
-            labels_criterion = torch.LongTensor([i for _ in range(len(selected_images))]).cuda()
-            _, adversarial_examples, _ = attack(fmodel, selected_images, labels_criterion, epsilons=self.epsilons)
+            labels_criterion = torch.LongTensor([i for _ in range(len(adversarial_examples))]).cuda()
+            _, adversarial_examples, _ = attack(fmodel, adversarial_examples, labels_criterion, epsilons=self.epsilons)
 
             for adv in adversarial_examples:
                 return_images.append(adv.cpu())

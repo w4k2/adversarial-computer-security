@@ -36,6 +36,8 @@ def main():
             train_datasets.append(train_dataset)
             test_datasets.append(test_dataset)
             train_stream, test_stream = data.load_data.get_benchmark(train_datasets, test_datasets, args.seed)
+        # if i in (1, 10, 19):
+        #     torch.save(model.state_dict(), f'weights_{i}.pt')
 
         train_task = train_stream[i]
         eval_stream = [test_stream[i]]
@@ -61,7 +63,7 @@ def parse_args():
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
-    parser.add_argument('--adversarial_attacks', default='different', choices=('different', 'same'))
+    parser.add_argument('--adversarial_attacks', default='same', choices=('different', 'same'))
     parser.add_argument('--n_experiences', default=6, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
 
