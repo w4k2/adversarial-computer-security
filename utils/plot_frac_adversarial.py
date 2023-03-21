@@ -22,16 +22,18 @@ def main():
     missclassifed_targetted, error_rate_targetted = load_error_rates(targeted_path)
 
     with sns.axes_style("darkgrid"):
+        plt.figure(figsize=(10, 5))
         plt.plot(error_rate, c=colors[0], label='fooling rate ours')
         plt.plot(missclassifed, '--', c=colors[0], label='missclassifed as normal ours')
         plt.plot(error_rate_non_targetted, c=colors[1], label='fooling rate untargeted')
         plt.plot(missclassifed_non_targetted, '--', c=colors[1], label='missclassifed as normal untargeted')
         plt.plot(error_rate_targetted, c=colors[2], label='fooling rate targeted')
         plt.plot(missclassifed_targetted, '--', c=colors[2], label='missclassifed as normal targeted')
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, ncol=3)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, ncol=3)
         plt.subplots_adjust(right=0.7)
         plt.xlabel('tasks')
         plt.ylabel('fooling rate / fraction of samples')
+        plt.tight_layout()
         plt.show()
 
 
