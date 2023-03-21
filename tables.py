@@ -6,16 +6,19 @@ import tabulate
 
 def main():
     runs_USTC_domain_inc = {
-        'Upperbound': ['c0b03fee28124b228b379ec2fe2050e9', '3c3948a9b6ab4d9da8c3ac81ec6440c4', 'beb7cb7e2e7246afb528744b8a7eadc8', '9a285e751bba4d2cb0c22b70db08746e', '965b427c284a47c696c088e4fba77cce'],
-        'Naive': ['1095b630af174bf98700ff2f954aefde', 'a41d5e0833b14ae5a7d216891296a825', '081c72cab8df42caa9889615406c1a62', 'd93f1dcd447f495996621d43488bf12a', '55133cc59dfd4cbe803102da4caf9f03'],
-        'EWC': ['e65fa7a39ca34c5d90b7de41d1b9ae2d', '3f5d035707a14d6db45c714e315627e7', 'd95b4cadbc6d4884b0fe9837d14068f7', 'fc7e2bc72f0343428ef841743f6ffc5d', 'deb9a023589b43bb8711dc6e198f799e'],
-        'aGEM': ['2904e0316c1d4f04bdd61b06292daed2', '2b9a4bef965a41bdb44d8574cc8eba04', '16fd0de00501402bbb5a54a5f6611b40', 'b82334aecc244ff393f724e30649b2ba', '2d4cb64664984f99bed2735fffee16b1'],
-        'ER': ['e0255b9665404fdcafead8a81679e6ff', '7d73aad88db24e0a99acde1c528879c3', '24083c1a1ee74957a774fe0976e9095f', '27fd6f5b3fab407d993256b86b1a66e8', 'd674f8d0ea6646d0aaf5cfcc10d3335b'],
-        'MIR': ['3d6058b0c4394915b7e0c6feb3c4d787', 'b0c3717a42064128bc850a5408675309', '0318ccb4338a4d07a9c68eba5b6c023e', '1eef7dfcc61f4baeafb9a50a81d179cb', '276fdf385d264904a7120777d0e39dbc'],
+        'Upperbound': ['c559011c3689414d8ae9c8cdafb4bf99', 'eea592a5b6e6457caffb56b2a9e50202', 'a3bcd071163c4648b509c7ed7808745d', '4baf9d0e17b44da2a86996b64fe5822c', '36840ddb62e945ed8d9786798169daad'],
+        'Naive': ['2f3451f6e73148da91738824b8fb967b', 'a2db5a6e61f84a289fc2b84f25b2726a', '6591c4d386de4c898f731b517f859b13', '95eb7012a89249478297a5f1dbf6126d', 'd6f4cf84a46541c1a9ff007a2bb15d6b'],
+        'EWC': ['598198f7d8d24a75a4466f3124165250', '7dbdbfed3f2b4c028fb18b8324646428', 'fb88cdf95f734518a41df97ab4eff6af', 'faebbd63d85840a49d4726a1c5a16f1d', 'f17bacaa53e14f77a26ed531208c2c63'],
+        'SI': ['2c2a29587ee34bc5986becd40f7a78a0', '5d26f2b3be2a4478bb0b049d0bfce268', '509b92187b514f76984243d3a82072e2', '676a72e379324f129257a48c2e60dab7', '0764c173e2f44ffd8006bc3fb69a01eb'],
+        'GDumb': ['4d9c6323d7904c79b08812f48ad9f831', '0e0f6f975a0f4eb28683fa700429c4a0', '38e9b6c4b967493ab2f97c102352c650', '75090f6502874dfa92a6dd0419979e0e', '8998c1f081c043b4b8d9108af66d743b'],
+        'iCaRL': ['5be30d15b2ac4d1b89e64a02a673066b', '1dfb435c03214a45a6a2f973674e28dc', '6f5f90289a54460eb4e08625b51215dd', '70e2b63d498b476599b1166d16db2325', 'e96c6b0e86444a7b88cd56c223d10605'],
+        'aGEM': ['656ccbb514b5416abe1dac5bcc060674', 'd5ece7613d01429499ca9bfadacd045e', '62ba143a93214844b89ba8975f993df9', '352bb51d553f43c697431da02312e397', 'db28d6cfac5d4fd4bd93d758fe6ea76f'],
+        'ER': ['f704b72d79a04e3bb1016638788ac9a2', '2674e49dcb2b493893c92fc3fb3b1a0c', '4f1aaf0c70e7427c9956197d8788dc17', 'cdf8980b97a44762b4ffc8ddb418ada5', '8a276dd522fb41e0ab9586cf967088ea'],
+        'MIR': ['44902538bd4b401bb1d39a7921e7a16c', '71826789addb4d48bb845fcebb3f7dec', '4fd2ae571b134db381dfc9198cf93f73', 'f2ba8507a9934ca3abab26c06e757c1f', '55dc9c93ea7b4c7a81b1a16c5aeacc7b'],
     }
 
-    mlruns_path = '///home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/'
-    # mlruns_path = '///home/jedrzejkozal/Documents/stochastic-depth-data-streams/mlruns/'
+    # mlruns_path = '///home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/'
+    mlruns_path = '///home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/'
     client = mlflow.tracking.MlflowClient(mlruns_path)
 
     table = list()
