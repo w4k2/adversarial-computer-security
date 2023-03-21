@@ -1,0 +1,4 @@
+artifact_location: /home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/2
+experiment_id: '2'
+lifecycle_stage: active
+name: domain incremental CIC-IDS-2017
