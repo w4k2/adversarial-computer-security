@@ -16,16 +16,31 @@ def main():
         'ER': ['f704b72d79a04e3bb1016638788ac9a2', '2674e49dcb2b493893c92fc3fb3b1a0c', '4f1aaf0c70e7427c9956197d8788dc17', 'cdf8980b97a44762b4ffc8ddb418ada5', '8a276dd522fb41e0ab9586cf967088ea'],
         'MIR': ['44902538bd4b401bb1d39a7921e7a16c', '71826789addb4d48bb845fcebb3f7dec', '4fd2ae571b134db381dfc9198cf93f73', 'f2ba8507a9934ca3abab26c06e757c1f', '55dc9c93ea7b4c7a81b1a16c5aeacc7b'],
     }
+    runs_CICIDS_domain_inc = {
+        'Upperbound': ['c9e27c07653441e69e3d41ca86820518', '356f5c04263542fa9a9b9b0cf1ce97bf', 'b54fd59bbb17416196bb592dc3cb84a7', '102d0b3dcdcb4bc3acad5126d9996cd5', '129e69ac087b475aaaf0c5fc34648f2c'],
+        'Naive': ['ec9c88e4c307480b96149632b64d2fc5', 'fb2b5014f80148faa72d0a1902be42b7', '5eac8bb2738f43889bbe552bbdaa3fe0', '7f26c1c87029498dae327914d9f2b2bd', '79888a2c845a4f409031ee483e93a267'],
+        'EWC': ['8319656d9b524c30b14ce71dbc717cab', '7391649246c642db9c0a2ceda3a01fc8', 'c5893bfbfe734f16af8e3ca3d8a6d24c', '16d0c8e7046e443ca700068122b4f9c2', '93dcd8c4a2a4436ba16d253daf208c12'],
+        'SI': ['b30721dafed3489d8025993b91f018db', '026ddc31fe894ce6a0729bc22ae7961f', 'fba8b50f9b0b4c90b0dc06c400b1f8cf', 'e50970d3efde4ac8b080333199f2ab86', '9bb3bbe748fb44b0a8c381e5563f7e51'],
+        'GDumb': ['da7f5f98c73142c1a5e73bf87da802a8', '2f83067c04fd42e79adb2ebfba3e0c64', 'd3f4646ec1b14f80bcf91520c5bb872c', 'aca6086f2a6448d48f1c33a781d53755', '56eb7c313fdc4e5d8ad74c5a410359ed'],
+        'iCaRL': ['bc5f175258c64ad0890f5b052f83e293', '111313c1c0cc4a40a3a4ce776291c51c', 'b7dc4ddc11124ea59ee78b42247f702a', '8b114da25dbd45b6aad9dd1e75a6f938', '5c2c45a383ab4e3f94cfaa889a90b40e'],
+        'aGEM': ['9545ba50f60a45fcb50ef1dcf4f141f2', '76538c86e6694ee3baa13170825bb341', '511f6857034a4f6a87191d11a3d6a432', '69d5e7a423344b36a9ea0f679eb667a3', '5d304038864b42b88cd533c6bacae57f'],
+        'ER': ['cf33c1720b064649b7f61520c76ce23f', '736db5b870834d03b9fdf90b2459c581', '4d018f2eb78341dda020eb16300df51a', '3c2d48ecbc7b4991ac0d43c364cc5ab4', 'e52210cac1d9408490c34ca61d3458d7'],
+        'MIR': ['0d6628f00cfb44f483df7772fd9c52e2', '5e77fd0054a5421f92ec0afb90b14832', 'b8e69554b52a4e1b88cc1bdeb9dd4365', '208425ae58f247d39ea53a5da2ed730f', 'a465f067fc9f4c5d82b10be42ba99edf'],
+    }
 
     # mlruns_path = '///home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/'
     mlruns_path = '///home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/'
     client = mlflow.tracking.MlflowClient(mlruns_path)
+    print_table(client, runs_USTC_domain_inc, '1')
+    print_table(client, runs_CICIDS_domain_inc, '2')
 
+
+def print_table(client, runs, experiment_id):
     table = list()
-    for name, run_ids in runs_USTC_domain_inc.items():
+    for name, run_ids in runs.items():
         row = list()
         row.append(name)
-        metrics = calc_average_metrics(run_ids, client, '1')
+        metrics = calc_average_metrics(run_ids, client, experiment_id)
         row.extend(metrics)
         table.append(row)
 
