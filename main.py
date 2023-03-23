@@ -57,14 +57,14 @@ def parse_args():
     parser.add_argument('--experiment', default='Default', help='mlflow experiment name')
     parser.add_argument('--nested_run', action='store_true', help='create nested run in mlflow')
     parser.add_argument('--debug', action='store_true', help='if true, execute only one iteration in training epoch')
-    parser.add_argument('--interactive_logger', default=True, type=utils.strtobool, help='if True use interactive logger with tqdm for printing in console')
+    parser.add_argument('--interactive_logger', default=False, type=utils.strtobool, help='if True use interactive logger with tqdm for printing in console')
 
     parser.add_argument('--method', default='naive', choices=('naive', 'cumulative', 'ewc', 'agem', 'replay', 'lwf', 'mir', 'icarl', 'gdumb', 'si', 'bic'))
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
     parser.add_argument('--adversarial_attacks', default='same', choices=('different', 'same'))
-    parser.add_argument('--n_experiences', default=6, type=int)
+    parser.add_argument('--n_experiences', default=20, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
 
     parser.add_argument('--lr', default=0.001, type=float)
