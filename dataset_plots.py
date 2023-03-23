@@ -6,6 +6,7 @@ import collections
 
 import data
 import adversarial
+import methods
 
 
 def main():
@@ -57,12 +58,13 @@ def main():
 def plot_tasks(axes, axis_idx, dataset_name, y_label=False):
     train_datasets, test_datasets, classes_per_task = data.get_datasets(dataset_name, 20)
     train_stream, _ = data.get_benchmark(train_datasets, test_datasets, seed=42)
-    model = torchvision.models.resnet.resnet18(num_classes=classes_per_task, pretrained=False)
+    # model = torchvision.models.resnet.resnet18(num_classes=classes_per_task, pretrained=False)
+    model = methods.get_resnet(classes_per_task, single_input_channel=dataset_name == 'USTC-TFC2016')
     adversarial_examples = adversarial.AdversarialExamplesGenerator(20, classes_per_task, 'same', dataset_name, seed=42)
 
     for i in range(3):
         if i > 0:
-            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i)
+            train_dataset, test_dataset = adversarial_examples.get_adv_datasets(model, i, train_datasets[-1], test_datasets[-1])
             train_datasets.append(train_dataset)
             test_datasets.append(test_dataset)
             train_stream, _ = data.load_data.get_benchmark(train_datasets, test_datasets, seed=42)

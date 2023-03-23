@@ -29,7 +29,9 @@ class AdversarialExamplesGenerator:
 
         _, labels, _, _ = read_data(self.dataset_name)
         _, label_counts = torch.unique(labels, return_counts=True)
-        self.max_examples_per_epsilon = min(max_examples_per_epsilon, max(label_counts).item())
+        print('label_counts = ', label_counts)
+        self.max_examples_per_epsilon = min(max_examples_per_epsilon, min(label_counts).item())
+        print('max_examples_per_epsilon = ', self.max_examples_per_epsilon)
 
         self.epsilons = [epsilon]
         if attacks == 'same':
@@ -90,6 +92,7 @@ class AdversarialExamplesGenerator:
             indicies = indicies[shuffle_idx]
             indicies = indicies[:self.max_examples_per_epsilon]
             selected_images = images[indicies]
+            print(f'class {i} indicies = {len(indicies)}')
 
             new_labels = self.get_similar_classes(model, selected_images, i)
             criterion = TargetedMisclassification(new_labels)
