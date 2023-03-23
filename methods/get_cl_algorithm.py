@@ -72,21 +72,21 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = GEM(model, optimizer, criterion, patterns_per_exp=250,
+        strategy = GEM(model, optimizer, criterion, patterns_per_exp=100,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'agem':
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = AGEMModified(model, optimizer, criterion, patterns_per_exp=500, sample_size=256,
+        strategy = AGEMModified(model, optimizer, criterion, patterns_per_exp=100, sample_size=256,
                                 train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                                 train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'replay':
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = ReplayModified(model, optimizer, criterion, mem_size=250*args.n_experiences,
+        strategy = ReplayModified(model, optimizer, criterion, mem_size=100*args.n_experiences,
                                   train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                                   train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'lwf':
@@ -100,7 +100,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = Mir(model, optimizer, criterion, patterns_per_exp=250, sample_size=50,
+        strategy = Mir(model, optimizer, criterion, patterns_per_exp=100, sample_size=50,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'icarl':
@@ -111,7 +111,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         plugins.append(LRSchedulerPlugin(optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 40, 45], gamma=0.2)))
         strategy = ICaRL(
             model.feature_extractor, model.classifier, optimizer,
-            250*args.n_experiences,
+            100*args.n_experiences,
             buffer_transform=None,
             fixed_memory=True, train_mb_size=args.batch_size,
             train_epochs=args.n_epochs, eval_mb_size=args.batch_size,
@@ -121,7 +121,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = GDumb(model, optimizer, criterion, mem_size=250*args.n_experiences,
+        strategy = GDumb(model, optimizer, criterion, mem_size=100*args.n_experiences,
                          train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                          train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'si':
@@ -135,7 +135,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
         model = get_resnet(num_classes, single_channel)
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
         criterion = nn.CrossEntropyLoss()
-        strategy = BiC(model, optimizer, criterion, mem_size=250*args.n_experiences, val_percentage=0.1, T=2,
+        strategy = BiC(model, optimizer, criterion, mem_size=100*args.n_experiences, val_percentage=0.1, T=2,
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
 
