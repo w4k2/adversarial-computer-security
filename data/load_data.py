@@ -33,8 +33,8 @@ def get_datasets(dataset_name, n_experiences):
 
     train_images, train_labels, test_images, test_labels = read_data(dataset_name)
     num_classes = len(np.unique(train_labels))
-    train_images, train_labels = select_data(train_images, train_labels, num_classes, n_experiences)
-    test_images, test_labels = select_data(test_images, test_labels, num_classes, n_experiences)
+    # train_images, train_labels = select_data(train_images, train_labels, num_classes, n_experiences)
+    # test_images, test_labels = select_data(test_images, test_labels, num_classes, n_experiences)
 
     train_dataset = BaseDataset(train_images, train_labels)
     test_dataset = BaseDataset(test_images, test_labels)
