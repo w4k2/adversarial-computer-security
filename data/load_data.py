@@ -27,11 +27,15 @@ class BaseDataset(torch.utils.data.Dataset):
         return x, y
 
 
-def get_datasets(dataset_name, n_experiences):
+def get_datasets(dataset_name, n_experiences, three_channels=False):
     train_datasets = []
     test_datasets = []
 
     train_images, train_labels, test_images, test_labels = read_data(dataset_name)
+    if three_channels:
+        train_images = train_images.repeat(1, 3, 1, 1)
+        test_images = test_images.repeat(1, 3, 1, 1)
+
     num_classes = len(np.unique(train_labels))
     # train_images, train_labels = select_data(train_images, train_labels, num_classes, n_experiences)
     # test_images, test_labels = select_data(test_images, test_labels, num_classes, n_experiences)

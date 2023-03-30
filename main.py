@@ -1,3 +1,4 @@
+import copy
 import tempfile
 import argparse
 import os
@@ -9,6 +10,7 @@ import seaborn as sns
 import torch
 import torch.utils.data.dataset
 from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import KFold
 
 import adversarial
 import data
@@ -20,6 +22,93 @@ def main():
     args = parse_args()
     seed_everything(args.seed)
 
+    if args.dataset == 'combined':
+        train_combined(args)
+    else:
+        train_adversarial(args)
+
+
+def train_combined(args):
+    device = torch.device(args.device)
+    train_datasets, test_datasets = [], []
+    ustc_train_datasets, ustc_test_datasets, _ = data.get_datasets('USTC-TFC2016', args.n_experiences, three_channels=True)
+    for i in range(5):
+        train_dataset = split_classes(ustc_train_datasets[0], [i, 5+i])
+        train_dataset.targets[train_dataset.targets == i] = 0
+        train_dataset.targets[train_dataset.targets == 5+i] = 1
+        train_datasets.append(train_dataset)
+
+        test_dataset = split_classes(ustc_test_datasets[0], [i, 5+i])
+        test_dataset.targets[test_dataset.targets == i] = 0
+        test_dataset.targets[test_dataset.targets == 5+i] = 1
+        test_datasets.append(test_dataset)
+
+    cic_train_datasets, cic_test_datasets, _ = data.get_datasets('CIC-IDS-2017', args.n_experiences)
+    train_normal_dataset = split_classes(cic_train_datasets[0], [0])
+    test_normal_dataset = split_classes(cic_test_datasets[0], [0])
+    kfold = KFold(n_splits=8, shuffle=True, random_state=args.seed)
+    for i, (_, idx) in enumerate(kfold.split(train_normal_dataset.targets)):
+        normal_dataset = copy.deepcopy(train_normal_dataset)
+        normal_dataset.images = normal_dataset.images[idx]
+        normal_dataset.targets = normal_dataset.targets[idx]
+        normal_dataset.targets.fill_(0)
+
+        attack_dataset = split_classes(cic_train_datasets[0], [i+1])
+        attack_dataset.targets.fill_(1)
+
+        # concatenate datasets
+        train_dataset = normal_dataset
+        train_dataset.images = torch.cat((train_dataset.images, attack_dataset.images), dim=0)
+        train_dataset.targets = torch.cat((train_dataset.targets, attack_dataset.targets), dim=0)
+        train_datasets.append(train_dataset)
+
+    kfold = KFold(n_splits=8, shuffle=True, random_state=args.seed)
+    for i, (_, idx) in enumerate(kfold.split(test_normal_dataset.targets)):
+        normal_dataset = copy.deepcopy(test_normal_dataset)
+        normal_dataset.images = normal_dataset.images[idx]
+        normal_dataset.targets = normal_dataset.targets[idx]
+        normal_dataset.targets.fill_(0)
+
+        attack_dataset = split_classes(cic_test_datasets[0], [i+1])
+        attack_dataset.targets.fill_(1)
+
+        # concatenate datasets
+        test_dataset = normal_dataset
+        test_dataset.images = torch.cat((test_dataset.images, attack_dataset.images), dim=0)
+        test_dataset.targets = torch.cat((test_dataset.targets, attack_dataset.targets), dim=0)
+        test_datasets.append(test_dataset)
+
+    train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
+    classes_per_task = 2
+
+    num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
+    strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, single_channel=args.dataset == 'USTC-TFC2016', use_mlflow=not args.debug)
+
+    results = []
+    for i in range(args.n_experiences):
+        train_task = train_stream[i]
+        eval_stream = [test_stream[i]]
+
+        strategy.train(train_task, eval_stream, num_workers=20, drop_last=True)
+        selected_tasks = [test_stream[j] for j in range(i+1)]
+        eval_results = strategy.eval(selected_tasks)
+        results.append(eval_results)
+
+
+def split_classes(dataset, selected_classes: list):
+    new_dataset = copy.deepcopy(dataset)
+
+    idx = torch.zeros_like(new_dataset.targets)
+    for i in selected_classes:
+        idx = torch.logical_or(idx, new_dataset.targets == i)
+
+    new_dataset.images = new_dataset.images[idx]
+    new_dataset.targets = new_dataset.targets[idx]
+
+    return new_dataset
+
+
+def train_adversarial(args):
     device = torch.device(args.device)
     train_datasets, test_datasets, classes_per_task = data.get_datasets(args.dataset, args.n_experiences)
     train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
@@ -62,7 +151,7 @@ def parse_args():
     parser.add_argument('--method', default='naive', choices=('naive', 'cumulative', 'ewc', 'agem', 'replay', 'lwf', 'mir', 'icarl', 'gdumb', 'si', 'bic'))
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
-    parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017'))
+    parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017', 'combined'))
     parser.add_argument('--adversarial_attacks', default='same', choices=('different', 'same'))
     parser.add_argument('--n_experiences', default=20, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))
