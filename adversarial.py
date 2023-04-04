@@ -12,20 +12,14 @@ from utils.tsail import TsAIL
 
 
 class AdversarialExamplesGenerator:
-    def __init__(self, n_experiences, num_classes, attacks, dataset_name, seed, max_examples_per_epsilon=2000, steps=10, stepsize=0.4, epsilon=0.5):
+    def __init__(self, n_experiences, num_classes, attacks, normal_trafic_classes, attack_classes, dataset_name, seed, max_examples_per_epsilon=2000, steps=10, stepsize=0.4, epsilon=0.5):
         self.num_classes = num_classes
         self.dataset_name = dataset_name
         self.n_experiences = n_experiences
         self.seed = seed
 
-        if dataset_name == 'USTC-TFC2016':
-            self.normal_trafic_classes = [0, 1, 2, 3, 4]
-            self.attack_classes = [5, 6, 7, 8, 9]
-        elif dataset_name == 'CIC-IDS-2017':
-            self.normal_trafic_classes = [0]
-            self.attack_classes = [1, 2, 3, 4, 5, 6, 7, 8]
-        else:
-            raise ValueError("Invalid dataset name")
+        self.normal_trafic_classes = normal_trafic_classes
+        self.attack_classes = attack_classes
 
         _, labels, _, _ = read_data(self.dataset_name)
         _, label_counts = torch.unique(labels, return_counts=True)

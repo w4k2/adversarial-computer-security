@@ -31,7 +31,7 @@ def main():
 def train_combined(args):
     device = torch.device(args.device)
     train_datasets, test_datasets = [], []
-    ustc_train_datasets, ustc_test_datasets, _ = data.get_datasets('USTC-TFC2016', args.n_experiences, three_channels=True)
+    ustc_train_datasets, ustc_test_datasets, _, _, _ = data.get_datasets('USTC-TFC2016', three_channels=True)
     for i in range(5):
         train_dataset = split_classes(ustc_train_datasets[0], [i, 5+i])
         train_dataset.targets[train_dataset.targets == i] = 0
@@ -43,7 +43,7 @@ def train_combined(args):
         test_dataset.targets[test_dataset.targets == 5+i] = 1
         test_datasets.append(test_dataset)
 
-    cic_train_datasets, cic_test_datasets, _ = data.get_datasets('CIC-IDS-2017', args.n_experiences)
+    cic_train_datasets, cic_test_datasets, _, _, _ = data.get_datasets('CIC-IDS-2017')
     train_normal_dataset = split_classes(cic_train_datasets[0], [0])
     test_normal_dataset = split_classes(cic_test_datasets[0], [0])
     kfold = KFold(n_splits=8, shuffle=True, random_state=args.seed)
@@ -110,13 +110,14 @@ def split_classes(dataset, selected_classes: list):
 
 def train_adversarial(args):
     device = torch.device(args.device)
-    train_datasets, test_datasets, classes_per_task = data.get_datasets(args.dataset, args.n_experiences)
+    train_datasets, test_datasets, classes_per_task, normal_trafic_classes, attack_classes = data.get_datasets(
+        args.dataset, binarize_classes=args.binarize_classes)
     train_stream, test_stream = data.get_benchmark(train_datasets, test_datasets, args.seed)
 
     num_classes = classes_per_task if args.training_mode == 'domain_incremental' else classes_per_task * args.n_experiences
     strategy, model, mlf_logger = methods.get_cl_algorithm(args, device, num_classes, single_channel=args.dataset == 'USTC-TFC2016', use_mlflow=not args.debug)
     adversarial_examples = adversarial.AdversarialExamplesGenerator(args.n_experiences, classes_per_task, args.adversarial_attacks,
-                                                                    args.dataset, args.seed)
+                                                                    normal_trafic_classes, attack_classes, args.dataset, args.seed)
 
     results = []
     for i in range(args.n_experiences):
@@ -152,6 +153,7 @@ def parse_args():
     parser.add_argument('--base_model', default='resnet18', choices=('resnet18', 'reduced_resnet18', 'resnet50', 'simpleMLP'))
     parser.add_argument('--pretrained', default=False, type=utils.strtobool, help='if True load weights pretrained on imagenet')
     parser.add_argument('--dataset', default='USTC-TFC2016', choices=('USTC-TFC2016', 'CIC-IDS-2017', 'combined'))
+    parser.add_argument('--binarize_classes', action='store_true')
     parser.add_argument('--adversarial_attacks', default='same', choices=('different', 'same'))
     parser.add_argument('--n_experiences', default=20, type=int)
     parser.add_argument('--training_mode', default='domain_incremental', choices=('domain_incremental', 'class_incremental'))

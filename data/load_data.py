@@ -27,7 +27,7 @@ class BaseDataset(torch.utils.data.Dataset):
         return x, y
 
 
-def get_datasets(dataset_name, n_experiences, three_channels=False):
+def get_datasets(dataset_name, three_channels=False, binarize_classes=False):
     train_datasets = []
     test_datasets = []
 
@@ -40,13 +40,29 @@ def get_datasets(dataset_name, n_experiences, three_channels=False):
     # train_images, train_labels = select_data(train_images, train_labels, num_classes, n_experiences)
     # test_images, test_labels = select_data(test_images, test_labels, num_classes, n_experiences)
 
+    if dataset_name == 'USTC-TFC2016':
+        normal_trafic_classes = [0, 1, 2, 3, 4]
+        attack_classes = [5, 6, 7, 8, 9]
+    elif dataset_name == 'CIC-IDS-2017':
+        normal_trafic_classes = [0]
+        attack_classes = [1, 2, 3, 4, 5, 6, 7, 8]
+    else:
+        raise ValueError("Invalid dataset name")
+
+    if binarize_classes:
+        train_labels = binarize(train_labels, dataset_name)
+        test_labels = binarize(test_labels, dataset_name)
+
+        normal_trafic_classes = [0]
+        attack_classes = [1]
+
     train_dataset = BaseDataset(train_images, train_labels)
     test_dataset = BaseDataset(test_images, test_labels)
 
     train_datasets.append(train_dataset)
     test_datasets.append(test_dataset)
 
-    return train_datasets, test_datasets, num_classes
+    return train_datasets, test_datasets, num_classes, normal_trafic_classes, attack_classes
 
 
 def read_data(dataset_name):
@@ -110,6 +126,22 @@ def select_data(images, labels, num_classes, n_experiences):
     new_images = torch.cat(new_images, dim=0)
     new_labels = torch.cat(new_labels, dim=0)
     return new_images, new_labels
+
+
+def binarize(labels, dataset_name):
+    if dataset_name == 'CIC-IDS-2017':
+        normal_classes = [0]
+        attack_classes = [1, 2, 3, 4, 5, 6, 7, 8]
+    else:
+        normal_classes = [0, 1, 2, 3, 4]
+        attack_classes = [5, 6, 7, 8, 9]
+
+    for c in normal_classes:
+        labels[labels == c] = 0
+    for c in attack_classes:
+        labels[labels == c] = 1
+
+    return labels
 
 
 def get_benchmark(train_datasets, test_datasets, seed):
