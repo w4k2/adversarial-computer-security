@@ -7,13 +7,13 @@ from avalanche.evaluation.metrics import forgetting_metrics, accuracy_metrics, l
 from avalanche.training.supervised import EWC, GEM, LwF, Naive, ICaRL, GDumb, SynapticIntelligence, BiC
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.training.plugins.lr_scheduling import LRSchedulerPlugin
-from avalanche.models import IcarlNet, make_icarl_net, initialize_icarl_net
 
 from utils.mlflow_logger import MLFlowLogger
 from methods.custom_replay import *
 from methods.custom_cumulative import *
 from methods.custom_agem import *
 from methods.debug_plugin import DebugPlugin
+from methods.icarl_model import IcarlNet, make_icarl_net, initialize_icarl_net
 from methods.mir import *
 
 
@@ -104,7 +104,7 @@ def get_cl_algorithm(args, device, num_classes, single_channel=False, use_mlflow
                        train_mb_size=args.batch_size, eval_mb_size=args.batch_size, device=device,
                        train_epochs=args.n_epochs, plugins=plugins, evaluator=evaluation_plugin, eval_every=-1)
     elif args.method == 'icarl':
-        model: IcarlNet = make_icarl_net(num_classes=num_classes, c=1 if single_channel else 3)
+        model: IcarlNet = make_icarl_net(num_classes=num_classes, n=3, c=1 if single_channel else 3)
         model.apply(initialize_icarl_net)
 
         optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, momentum=0.9)

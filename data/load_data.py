@@ -55,6 +55,7 @@ def get_datasets(dataset_name, three_channels=False, binarize_classes=False):
 
         normal_trafic_classes = [0]
         attack_classes = [1]
+        num_classes = 2
 
     train_dataset = BaseDataset(train_images, train_labels)
     test_dataset = BaseDataset(test_images, test_labels)
