@@ -28,19 +28,31 @@ def main():
         'MIR': ['3432da608e4946aca9d98eb60a5d08fc', 'fc9593ccbd514c8494a49a11595ab640', 'ed5c5bfb26c74b8dafb58d67a10c34db', '297bce7bc7a647b193ae8acf93758db3', '26723d3298084bfdbf719b1ed732ab25'],
     }
 
-    # mlruns_path = '///home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/'
-    mlruns_path = '///home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/'
+    mlruns_path = '///home/jkozal/Documents/PWr/adverserial/adversarial-computer-security/mlruns/'
+    # mlruns_path = '///home/jedrzejkozal/Documents/adversarial-computer-security/mlruns/'
     client = mlflow.tracking.MlflowClient(mlruns_path)
     print_table(client, runs_USTC_domain_inc, '1')
     print_table(client, runs_CICIDS_domain_inc, '2')
 
+    runs_combined_domain_inc = {
+        'Upperbound': ['a56a00566ef14028bd6d2fcaa06fb992', '1f8b39f49f9b4db285525f0b81fbffb4', '2759167a48a84655b61b438bcf10ea4a', '19bea136c29c40ee991dcd138449b34f', 'b8a7aad73b134707a66a7a5b11dc3929'],
+        'Naive': ['06ae183887e348828cee920f324aafc8', '89e122c2e0fe4a6b8088e1862d4b5868', 'e9a81ce98e93467ca24abfa30ecf4162', '8353a9bb813a472a98f889eb915ff648', 'c43b37da725e4082bb78175f0f255b8f'],
+        'EWC': ['62cf127b159d492b90fb05753aa3f5f2', 'e178bd392233498885bad60a66918b08', 'a228c47a9a194a1ba3ddcb9c9edbf820', '723e80b4e6a4447f979cfa5b3b8e1e6d', '53cff229df4948dcaa24f192baab24f5'],
+        'SI': ['90281e4dd98448d7a7040196a7a7eb12', '7f6408fe2dc4459296e9746352b600f5', '59b4d2c191304bd48f94ae331c5b58a9', '64da7557114e404789fe1e666cb554f1', '199807bad9c94295a4b14f9d59799118'],
+        'iCaRL': ['4a9262a5c8ba4404bb7de279088ce6fc', '74b4966c6d414e9d8eb93f8561453b76', 'b78f44a1f5564cadb9790eaba9791291', '27c3163851184525ac79fc7b3062db96', '24ac9059a04b4b2299cbea6c257ae952'],
+        'aGEM': ['8b1f850b79784db0b95d5efe334545a2', '45fb0d7750744051b65df0f17d2501d6', '111d32536a6941ca8e2268ddf2ddd200', '28229661b8fa4c79b7208365af7b0e48', 'de605aca79f44dfd974aad2113e8ab4d'],
+        'ER': ['a6777c75fa504f33ba912fe2412c4b74', 'c93df106045b49bcbe02b50fd2669cee', '1eb648a24b554bf68c961cf4200f8bec', '498c11511b054b7491682369d1cd5ada', 'f1a74c321a5a4252a3d84e260fd76f66'],
+        'MIR': ['1a74864261d747acade83cfe39e29803', 'b568cefe541e4278b78411554d7b4b0c', '2ced552fa0304220801f6e3276be733b', 'bb97f609e4304573a4837907bff89a54', '7c8f3dc9bf114c51b1f2f1785039ea94'],
+    }
+    print_table(client, runs_combined_domain_inc, '3', num_tasks=13)
 
-def print_table(client, runs, experiment_id):
+
+def print_table(client, runs, experiment_id, num_tasks=None):
     table = list()
     for name, run_ids in runs.items():
         row = list()
         row.append(name)
-        metrics = calc_average_metrics(run_ids, client, experiment_id)
+        metrics = calc_average_metrics(run_ids, client, experiment_id, num_tasks=num_tasks)
         row.extend(metrics)
         table.append(row)
 
@@ -52,7 +64,7 @@ def print_table(client, runs, experiment_id):
     print("\n\n")
 
 
-def calc_average_metrics(dataset_run_ids, client, experiment_id):
+def calc_average_metrics(dataset_run_ids, client, experiment_id, num_tasks=None):
     if dataset_run_ids[0] == None:
         return '-', '-', '-', '-'
 
@@ -61,7 +73,7 @@ def calc_average_metrics(dataset_run_ids, client, experiment_id):
     for run_id in dataset_run_ids:
         acc = get_metrics(run_id, client)
         acc_all.append(acc)
-        fm = calc_forgetting_measure(run_id, client, experiment_id=experiment_id)
+        fm = calc_forgetting_measure(run_id, client, experiment_id=experiment_id, num_tasks=num_tasks)
         fm_all.append(fm)
     avrg_acc = sum(acc_all) / len(acc_all)
     avrg_acc = round(avrg_acc, 4)
