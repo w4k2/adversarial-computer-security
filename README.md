@@ -42,8 +42,10 @@ List of all most important modules and scripts in our repo:
 
 # Citation policy
 
-If you use our code please cite this paper:
+tbd
+
+<!-- If you use our code please cite this paper:
 
 ```
 some bibtex
-```
+``` -->
